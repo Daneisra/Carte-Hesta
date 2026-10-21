@@ -1,0 +1,24 @@
+name: Demande de fonctionnalité
+description: Proposer une amélioration de Carte Hesta.
+title: "[Proposition] "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: "Utilisez des exemples fictifs. Ne joignez aucun export de données, cookie ou contenu privé. Les failles de sécurité se signalent via Security, pas dans une Issue publique."
+  - type: textarea
+    id: need
+    attributes:
+      label: Besoin rencontré
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Amélioration souhaitée et résultat attendu
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives envisagées

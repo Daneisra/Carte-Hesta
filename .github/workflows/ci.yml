@@ -1,0 +1,89 @@
+name: CI isolated security
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      api_only:
+        description: API isolation diagnostics only; cannot validate a release
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  isolated-validation:
+    name: ${{ inputs.api_only && 'API diagnostics only' || 'Full Linux validation' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: '1'
+      NPM_CONFIG_USERCONFIG: /tmp/cartehesta-empty-user.npmrc
+      NPM_CONFIG_GLOBALCONFIG: /tmp/cartehesta-empty-global.npmrc
+    defaults:
+      run:
+        shell: bash --noprofile --norc -euo pipefail {0}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          lfs: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22.23.2'
+      - name: Install locked tooling without lifecycle scripts or local npm configuration
+        run: |
+          touch "$NPM_CONFIG_USERCONFIG" "$NPM_CONFIG_GLOBALCONFIG"
+          npm ci --ignore-scripts --no-audit --no-fund
+          node -e "if(require('playwright/package.json').version!=='1.56.0')process.exit(1)"
+      - name: Strict index gate (legacy debt must be removed before CI can pass)
+        run: node tools/auditTrackedPaths.js --strict
+      - name: Encoding and isolated unit/storage/publication suites
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.api_only }}
+        run: |
+          node tools/lintEncoding.js
+          node tools/runIsolatedTests.js --unit
+          node tools/runIsolatedTests.js --storage
+          node tools/runIsolatedTests.js --publication
+      - name: Install native Linux tooling before deployment tests
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.api_only }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3 nginx rsync
+      - name: Isolation, permissions, offline migration and rollback
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.api_only }}
+        run: |
+          node --test tests/isolation/*.test.cjs
+          node --test tests/deployment/*.test.cjs
+      - name: Install fixed browsers (tool installation only)
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.api_only }}
+        run: node node_modules/playwright/cli.js install --with-deps chromium firefox
+      - name: API with isolation boundary enforcement
+        run: node tools/runIsolatedTests.js --project=api
+      - name: Both browsers (Firefox is mandatory)
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.api_only }}
+        run: |
+          node tools/runIsolatedTests.js --project=chromium
+          node tools/runIsolatedTests.js --project=firefox
+      - name: Build and verify a code-only candidate outside the checkout
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.api_only }}
+        env:
+          REVISION: ${{ github.sha }}
+        run: |
+          release="$RUNNER_TEMP/cartehesta-candidate"
+          node tools/deployment.js package "$GITHUB_WORKSPACE" "$release" "$REVISION" > "$RUNNER_TEMP/candidate-result.json"
+          checksum="$(node -p "require(process.env.RUNNER_TEMP+'/candidate-result.json').sha256")"
+          node tools/deployment.js verify "$release" "$REVISION" "$checksum"
+          # Validation only; no publication or transport.
+      - name: Preserve verified code-only candidate for reviewed migration
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.api_only }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cartehesta-code-${{ github.sha }}
+          path: ${{ runner.temp }}/cartehesta-candidate/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7

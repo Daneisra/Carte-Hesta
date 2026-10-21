@@ -1,0 +1,102 @@
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+.mypy_cache/
+.cache/
+
+# JS / tooling (au cas où)
+node_modules/
+dist/
+build/
+.tmp/
+.cache/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-*.log*
+pnpm-debug.log*
+assets/logs/sessions.json
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+*.env
+
+# Fichiers temporaires / exports
+*.tmp
+*.bak
+*.swp
+*.zip
+*.7z
+*.tar
+*.gz
+
+# (Optionnel) si tu génères des miniatures/sprites :
+assets/images/thumbnails/
+assets/images/sprites/
+
+# Playwright
+playwright-report/
+test-results/
+
+# Persistent roots never belong in source. Already tracked paths need reviewed untracking.
+/data/
+/media-private/
+/media-public/
+/logs/
+/secrets/
+/backups/
+/releases/
+/public/
+/assets/*
+!/assets/hesta-identity.css
+!/assets/fixtures/
+/assets/fixtures/*
+!/assets/fixtures/README.md
+!/assets/fixtures/locations_sample.json
+!/assets/fixtures/types_sample.json
+*.jsonl
+*.pem
+*.key
+*.p12
+*.pfx
+.aws/
+.ssh/
+.codex/
+.npmrc
+.netrc
+.pypirc
+
+# Additional private dump/archive formats and rotated journals; the Git gate also checks case aliases.
+*.tgz
+*.rar
+*.tbz2
+*.bz2
+*.xz
+*.zst
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+*.log.[0-9]*
+*.jsonl.[0-9]*

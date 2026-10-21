@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte Hesta | Accueil</title>
+    <meta name="description" content="Accueil de la carte narrative interactive. Accedez a la carte, connectez-vous via Discord et retrouvez les liens de la communaute." />
+    <meta property="og:title" content="Carte Hesta | Accueil" />
+    <meta property="og:description" content="Hub d entree vers la carte narrative interactive, les quetes live et la communaute." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://cartehesta.dannytech.fr/" />
+    <meta property="og:image" content="https://cartehesta.dannytech.fr/assets/logo.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Carte Hesta | Accueil" />
+    <meta name="twitter:description" content="Entrez sur la carte, connectez-vous via Discord et suivez les quetes en direct." />
+    <meta name="twitter:image" content="https://cartehesta.dannytech.fr/assets/logo.png" />
+    <link rel="stylesheet" href="/home.css">
+    <link rel="stylesheet" href="/assets/hesta-identity.css">
+    <link rel="stylesheet" href="/admin-panels.css">
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+</head>
+<body>
+    <a class="home-skip-link" href="#home-main">Aller au contenu principal</a>
+    <div class="home-shell">
+        <header class="home-header">
+            <div class="home-brand">
+                <a class="home-brand-mark" href="/" aria-label="Accueil Carte Hesta">
+                    <img src="/assets/logo.png" alt="" />
+                </a>
+                <span class="home-brand-text">
+                    <strong><a class="hesta-wordmark" href="https://hesta.dannytech.fr/">HESTA</a><span class="hesta-divider" aria-hidden="true">·</span>Carte Hesta</strong>
+                    <small>Hub narratif & carte interactive</small>
+                </span>
+            </div>
+            <nav class="home-nav" aria-label="Navigation accueil">
+                <a href="#home-main">Accueil</a>
+                <a href="https://pahesta.dannytech.fr/">Système PA</a>
+                <a href="#home-community">Communaute</a>
+                <a href="/timeline/">Chronologie</a>
+                <a href="/planning/">Planning</a>
+                <a href="/changelog/">Changelog</a>
+            </nav>
+            <div class="home-header-actions">
+                <a class="home-link-button home-link-button-primary" href="/map/">Entrer sur la carte</a>
+                <button id="home-login" class="home-link-button" type="button">Connexion Discord</button>
+                <button id="home-profile-toggle" class="home-link-button home-profile-toggle" type="button" aria-expanded="false" aria-controls="home-profile-popover" hidden>
+                    <span id="home-profile-toggle-avatar" class="home-profile-toggle-avatar" aria-hidden="true">?</span>
+                    <span id="home-profile-toggle-name" class="home-profile-toggle-name">Profil</span>
+                </button>
+            </div>
+            <div id="home-profile-popover" class="home-profile-popover" hidden>
+                <section id="home-session-card" class="home-session-card home-session-popover" aria-live="polite">
+                    <div class="home-session-header">
+                        <span id="home-avatar" class="home-avatar" aria-hidden="true">?</span>
+                        <div>
+                            <p id="home-username" class="home-session-name">Invite</p>
+                            <p id="home-role" class="home-session-role">Mode lecture</p>
+                        </div>
+                    </div>
+                    <p id="home-session-status" class="home-session-status">Connectez-vous pour modifier des lieux, gerer vos personnages et utiliser les outils admin.</p>
+                    <div class="home-session-meta">
+                        <div>
+                            <span class="label">Provider</span>
+                            <strong id="home-provider">Invite</strong>
+                        </div>
+                        <div>
+                            <span class="label">Discord</span>
+                            <strong id="home-discord">--</strong>
+                        </div>
+                        <div>
+                            <span class="label">Derniere connexion</span>
+                            <strong id="home-last-login">--</strong>
+                        </div>
+                    </div>
+                    <div class="home-session-links">
+                        <a id="home-session-map" class="home-inline-map-link" href="/map/">Aller a la carte</a>
+                        <a id="home-admin-link" class="home-inline-map-link home-inline-map-link-admin" href="/map/" hidden>Acces admin rapide</a>
+                    </div>
+                    <div class="home-session-atmosphere" aria-hidden="true">
+                        <div class="home-orb"></div>
+                        <div class="home-lines"></div>
+                        <p id="home-atmosphere-copy">Accueil narratif - entree rapide vers l'univers, la carte et la communaute.</p>
+                    </div>
+                    <div class="home-session-actions">
+                        <button id="home-logout" class="home-link-button home-session-logout" type="button" hidden>Se deconnecter</button>
+                    </div>
+                </section>
+            </div>
+        </header>
+
+        <main id="home-main" class="home-main">
+            <section class="home-hero" aria-labelledby="home-hero-title">
+                <div class="home-hero-copy">
+                    <p id="home-kicker" class="home-kicker">Accueil - Hub narratif</p>
+                    <h1 id="home-hero-title">Entrez dans l'univers avant d'ouvrir la carte</h1>
+                    <p id="home-hero-lead" class="home-lead">
+                        Explorez les lieux, suivez les quetes en direct, retrouvez votre groupe JDR et centralisez vos personnages.
+                        Cette page sert de point d'entree rapide pour la carte et la communaute.
+                    </p>
+                    <div id="home-hero-tags" class="home-hero-tags" aria-label="Points forts">
+                        <span class="home-hero-tag">Carte narrative</span>
+                        <span class="home-hero-tag">Quetes live</span>
+                        <span class="home-hero-tag">Groupes JDR</span>
+                        <span class="home-hero-tag">Profils & personnages</span>
+                    </div>
+                    <div id="home-hero-metrics" class="home-hero-metrics" aria-label="Resume accueil">
+                        <div class="home-hero-metric">
+                            <span>Hub</span>
+                            <strong>Carte + Communaute</strong>
+                        </div>
+                        <div class="home-hero-metric">
+                            <span>Acces</span>
+                            <strong>Lecture / Discord / Admin</strong>
+                        </div>
+                        <div class="home-hero-metric">
+                            <span>Etat</span>
+                            <strong>Version actuelle en production</strong>
+                        </div>
+                    </div>
+                    <div class="home-hero-actions">
+                        <a id="home-enter-map" class="home-cta home-cta-primary" href="/map/">Entrer sur la carte</a>
+                    </div>
+                    <p id="home-auth-note" class="home-auth-note" role="status" aria-live="polite">Verification de la session...</p>
+                </div>
+                <aside class="home-hero-side">
+                    <section class="home-hero-visual" aria-label="Apercu visuel de la carte">
+                        <div class="home-map-showcase">
+                            <article class="home-map-floating-card" aria-hidden="true">
+                                <div class="home-map-floating-header">
+                                    <span class="home-map-floating-pill">Lieu mis en avant</span>
+                                    <strong id="home-floating-title">Les terres d'Hesta</strong>
+                                </div>
+                                <p id="home-floating-copy">Un apercu clair du monde, des routes, des villes et des quetes qui structurent vos campagnes.</p>
+                                <div class="home-map-floating-tags">
+                                    <span>Carte</span>
+                                    <span>Lore</span>
+                                    <span>Quetes</span>
+                                </div>
+                            </article>
+                            <div class="home-map-frame">
+                                <img id="home-map-preview-image" src="/assets/home/mockups/map-preview-main.png" alt="Apercu de la carte Hesta" />
+                            </div>
+                            <img id="home-character-art" class="home-character-art" src="/assets/home/characters/Chevalier.png" alt="Chevalier de l'univers Hesta" />
+                        </div>
+                    </section>
+                </aside>
+            </section>
+            <section class="home-stats-strip" aria-label="Indicateurs de la communaute et de la carte">
+                <article class="home-stat-card">
+                    <span class="home-stat-kicker">Communaute</span>
+                    <strong>4</strong>
+                    <span class="home-stat-label">canaux relies</span>
+                </article>
+                <article class="home-stat-card">
+                    <span class="home-stat-kicker">Quetes</span>
+                    <strong id="home-stat-news-value">0</strong>
+                    <span id="home-stat-news-label" class="home-stat-label">actualités du monde</span>
+                </article>
+                <article class="home-stat-card">
+                    <span class="home-stat-kicker">Exploration</span>
+                    <strong id="home-stat-featured-value">0</strong>
+                    <span id="home-stat-featured-label" class="home-stat-label">lieux mis en avant</span>
+                </article>
+            </section>
+
+            <section class="home-grid home-grid-topics" aria-label="Sections d'accueil principales">
+                <article id="home-features" class="home-card">
+                    <p class="home-card-kicker">Explorer</p>
+                    <h2>Fonctionnalites de la carte</h2>
+                    <div class="home-feature-list" role="list">
+                        <div class="home-feature-item" role="listitem">
+                            <strong>Exploration</strong>
+                            <p>Continents, lieux, favoris, filtres avances et navigation rapide.</p>
+                        </div>
+                        <div class="home-feature-item" role="listitem">
+                            <strong>Quetes live</strong>
+                            <p>Evenements de quete et flux temps reel pour suivre les evolutions.</p>
+                        </div>
+                        <div class="home-feature-item" role="listitem">
+                            <strong>Profils & persos</strong>
+                            <p>Personnages, groupes JDR, disponibilites et personnalisation du profil.</p>
+                        </div>
+                    </div>
+                    <img class="home-features-bertholo" src="/assets/home/characters/Bertholo.png" alt="" aria-hidden="true" />
+                </article>
+                <article class="home-card">
+                    <p class="home-card-kicker">Demarrer</p>
+                    <h2>Comment commencer</h2>
+                    <ol class="home-steps">
+                        <li>
+                            <strong>Entrez sur la carte</strong>
+                            <p>Explorez en lecture seule ou connectez-vous ensuite.</p>
+                        </li>
+                        <li>
+                            <strong>Connectez-vous via Discord</strong>
+                            <p>Debloquez l'edition, le profil, les personnages et les groupes.</p>
+                        </li>
+                        <li>
+                            <strong>Reprenez vos favoris</strong>
+                            <p>Utilisez vos lieux favoris et votre dernier contexte pour repartir vite.</p>
+                        </li>
+                    </ol>
+                </article>
+                <article id="home-resume-card" class="home-card" hidden>
+                    <p class="home-card-kicker">Reprendre</p>
+                    <h2>Reprendre</h2>
+                    <div class="home-resume-grid">
+                        <div class="home-resume-metric">
+                            <span class="label">Favoris locaux</span>
+                            <strong id="home-resume-favorites">0</strong>
+                        </div>
+                        <div class="home-resume-metric">
+                            <span class="label">Dernier lieu</span>
+                            <strong id="home-resume-last-location">--</strong>
+                        </div>
+                    </div>
+                    <div class="home-card-actions">
+                        <a class="home-cta home-cta-secondary" href="/map/">Reprendre la carte</a>
+                        <a class="home-cta home-cta-secondary" href="/map/">Mes lieux favoris</a>
+                    </div>
+                    <p id="home-resume-note" class="home-muted">Connecte pour retrouver vos reperes plus rapidement.</p>
+                </article>
+                <article id="home-community" class="home-card home-card-community">
+                    <p class="home-card-kicker">Rester connecte</p>
+                    <h2>Communaute</h2>
+                    <p class="home-muted">Les échanges communautaires et le support sont regroupés sur le Portail Hesta.</p>
+                    <a id="home-community-portal-link" class="home-link-button" href="https://hesta.dannytech.fr/" target="_blank" rel="noopener noreferrer">Accéder au Portail Hesta</a>
+                    <section class="home-support-panel" aria-labelledby="home-support-title">
+                        <p class="home-card-kicker">Soutenir</p>
+                        <h3 id="home-support-title">Soutenir le projet</h3>
+                        <p class="home-muted">Soutenez le projet via PayPal ou Ko-fi, et retrouvez aussi les wishlists Roll20 utiles pour faire vivre la table.</p>
+                        <div class="home-support-tags" aria-hidden="true">
+                            <span>Wishlist Roll20</span>
+                            <span>PayPal</span>
+                            <span>Ko-fi</span>
+                        </div>
+                        <div class="home-support-links">
+                            <a id="home-donate-link" class="home-cta home-cta-primary" href="https://paypal.me/Daneisra?country.x=FR&locale.x=fr_FR" target="_blank" rel="noopener noreferrer">Soutenir via PayPal</a>
+                            <a id="home-kofi-link" class="home-cta home-cta-secondary" href="https://ko-fi.com/daneisra" target="_blank" rel="noopener noreferrer">Soutenir via Ko-fi</a>
+                        </div>
+                        <div class="home-support-roll20">
+                            <strong>Wishlists Roll20</strong>
+                            <div class="home-support-roll20-list">
+                                <a class="home-link-button" href="https://app.roll20.net/wishlist/195278" target="_blank" rel="noopener noreferrer">Maps Maps Never Enough Maps !</a>
+                                <a class="home-link-button" href="https://app.roll20.net/wishlist/255153" target="_blank" rel="noopener noreferrer">Give It To Me !</a>
+                                <a class="home-link-button" href="https://app.roll20.net/wishlist/255154" target="_blank" rel="noopener noreferrer">40k Addiction</a>
+                                <a class="home-link-button" href="https://app.roll20.net/wishlist/255155" target="_blank" rel="noopener noreferrer">Boarding, Matey!</a>
+                                <a class="home-link-button" href="https://app.roll20.net/wishlist/255156" target="_blank" rel="noopener noreferrer">Token's Love ❤</a>
+                            </div>
+                        </div>
+                    </section>
+                </article>
+            </section>
+            <section class="home-grid home-grid-newsband" aria-label="Nouveautes de la carte">
+                <article class="home-card home-card-wide" aria-labelledby="home-news-title">
+                    <p class="home-card-kicker">Dernieres mises a jour</p>
+                    <div class="home-card-header">
+                        <h2 id="home-news-title">Actualités du Monde d’Hesta</h2>
+                        <span id="home-news-status" class="home-status-pill">Chargement...</span>
+                    </div>
+                    <p id="home-news-note" class="home-muted">Événements narratifs et avancées des quêtes dans le monde d’Hesta.</p>
+                    <ul id="home-news-list" class="home-news-list">
+                        <li class="home-news-empty">Chargement des nouveautes...</li>
+                    </ul>
+                </article>
+            </section>
+            <section class="home-grid home-grid-changelog" aria-label="Patch notes recents">
+                <article class="home-card home-card-wide" aria-labelledby="home-changelog-title">
+                    <p class="home-card-kicker">Patch notes</p>
+                    <div class="home-card-header">
+                        <h2 id="home-changelog-title">Mises à jour de Carte Hesta</h2>
+                        <span id="home-changelog-status" class="home-status-pill">Chargement...</span>
+                    </div>
+                    <p id="home-changelog-note" class="home-muted">Versions, corrections et évolutions techniques de l’application.</p>
+                    <ul id="home-changelog-list" class="home-changelog-list">
+                        <li class="home-news-empty">Chargement des patch notes...</li>
+                    </ul>
+                    <div class="home-card-actions">
+                        <a class="home-cta home-cta-secondary" href="/changelog/">Voir tout le changelog</a>
+                    </div>
+                </article>
+            </section>
+            <section class="home-grid home-grid-discovery" aria-label="Live et lieux mis en avant">
+                <div class="home-discovery-stack">
+                    <article class="home-card home-card-live" aria-labelledby="home-live-title">
+                        <p class="home-card-kicker">Temps reel</p>
+                        <div class="home-card-header">
+                            <h2 id="home-live-title">Flux live</h2>
+                            <span id="home-live-status" class="home-status-pill">Connexion...</span>
+                        </div>
+                        <p id="home-live-note" class="home-muted">Apercu temps reel des quetes, annotations et synchronisations.</p>
+                        <ul id="home-live-list" class="home-live-list">
+                            <li class="home-news-empty">En attente d'evenements live...</li>
+                        </ul>
+                    </article>
+                </div>
+                <div class="home-discovery-stack">
+                    <article class="home-card home-card-featured" aria-labelledby="home-featured-title">
+                        <p class="home-card-kicker">A explorer ensuite</p>
+                        <div class="home-card-header">
+                            <h2 id="home-featured-title">Lieux mis en avant</h2>
+                            <span id="home-featured-status" class="home-status-pill">Chargement...</span>
+                        </div>
+                        <p id="home-featured-note" class="home-muted">Selection de lieux riches en medias, tags ou quetes pour reprendre rapidement l'exploration.</p>
+                        <div id="home-featured-list" class="home-featured-grid">
+                            <article class="home-featured-empty">Chargement des lieux mis en avant...</article>
+                        </div>
+                    </article>
+                </div>
+            </section>
+        </main>
+
+        <footer class="home-footer site-footer">
+            <div class="home-footer-left site-footer-left">
+                <p>&copy; <span id="home-year"></span> Carte Hesta. Tous droits reserves.</p>
+                <p class="home-footer-version site-footer-version">Version <span id="home-version">0.17.49</span></p>
+                <p id="home-footer-note" class="home-footer-note site-footer-note">Projet narratif / JDR - fan project / page d'accueil officielle.</p>
+            </div>
+            <nav class="home-footer-right site-footer-links" aria-label="Liens secondaires">
+                <a href="/map/">Acceder a la carte</a>
+                <a id="home-footer-support" href="https://github.com/Daneisra/Carte-Hesta/issues/new/choose" target="_blank" rel="noopener noreferrer">Bugs / Support</a>
+                <a href="/planning/">Planning</a>
+                <a href="/geek-unchained/">Geek Unchained</a>
+                <a href="/changelog/">Changelog</a>
+                <a id="home-footer-contact" href="mailto:contact@cartehesta.local">Contact</a>
+                <a id="home-footer-credits" href="/docs/ASSETS-CREDITS.md">Credits assets</a>
+            </nav>
+            <img class="home-footer-alienor-egg" src="/assets/home/characters/Alienor.png" alt="" aria-hidden="true" />
+        </footer>
+    </div>
+
+    <script type="module" src="/js/home.js"></script>
+    <script type="module" src="/js/home-admin.js"></script>
+</body>
+</html>

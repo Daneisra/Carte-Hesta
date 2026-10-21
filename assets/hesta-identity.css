@@ -1,0 +1,29 @@
+.hesta-wordmark {
+    color: inherit;
+    font-size: 0.65em;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    opacity: 0.85;
+    text-decoration: none;
+    border-radius: 2px;
+    transition: opacity 0.16s ease;
+}
+
+.hesta-divider {
+    margin-inline: 0.3em;
+    font-weight: 400;
+    opacity: 0.6;
+}
+
+.hesta-wordmark:hover {
+    opacity: 1;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+}
+
+.hesta-wordmark:focus-visible,
+:is(.home-brand-mark, .timeline-brand-mark, .planning-brand-mark, .changelog-brand-mark, .gu-brand-mark):focus-visible {
+    opacity: 1;
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+}

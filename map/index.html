@@ -1,0 +1,741 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
+    <title>Carte Interactive</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/assets/hesta-identity.css">
+    <link rel="stylesheet" href="editor.css">
+    <link rel="icon" type="image/png" href="assets/logo.png">
+</head>
+<body>
+    <div id="aria-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+    <div id="aria-alert" class="sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
+    <div id="profile-panel" class="profile-panel">
+        <button id="profile-button" class="profile-button" type="button" aria-haspopup="true" aria-expanded="false">
+            <span id="profile-avatar" class="profile-avatar" aria-hidden="true">?</span>
+            <span id="profile-label" class="profile-label">Profil</span>
+        </button>
+        <div id="auth-panel" class="profile-menu" hidden>
+            <div id="profile-identity-card" class="profile-identity-card">
+                <div class="profile-summary">
+                    <div id="profile-avatar-panel" class="profile-avatar profile-avatar-lg" aria-hidden="true">?</div>
+                    <div class="profile-info">
+                        <p id="auth-username" class="profile-name">Invite</p>
+                        <div class="profile-meta-row">
+                            <p id="auth-role" class="profile-role">Non connecte</p>
+                            <span id="auth-presence" class="profile-presence is-offline">Hors ligne</span>
+                        </div>
+                    </div>
+                </div>
+                <p id="auth-status" class="auth-status">Connexion requise pour modifier les lieux.</p>
+                <div class="profile-groups">
+                    <p class="profile-group-title">Groupes JDR</p>
+                    <div id="auth-groups" class="profile-group-list"></div>
+                    <p id="auth-groups-empty" class="profile-group-empty">Aucun groupe assigne.</p>
+                </div>
+            </div>
+            <div id="profile-customization" class="profile-customization">
+                <div class="profile-customization-header">
+                    <p class="profile-customization-title">Personnalisation</p>
+                    <button id="profile-customization-save" class="tertiary-button" type="button">Enregistrer</button>
+                </div>
+                <p id="profile-customization-locked" class="profile-character-locked" hidden>Connexion requise pour personnaliser votre profil.</p>
+                <ul id="profile-customization-errors" class="profile-inline-errors" hidden></ul>
+                <div class="profile-customization-fields">
+                    <label for="profile-banner">Banniere (URL)</label>
+                    <input id="profile-banner" type="text" placeholder="https://.../banniere.jpg" autocomplete="off" />
+                    <label for="profile-accent">Couleur d'accent</label>
+                    <div class="profile-accent-row">
+                        <input id="profile-accent-picker" type="color" value="#60a5fa" />
+                        <input id="profile-accent" type="text" placeholder="#60a5fa" autocomplete="off" />
+                    </div>
+                    <label for="profile-bio-markdown">Bio (markdown leger)</label>
+                    <textarea id="profile-bio-markdown" rows="4" placeholder="Quelques lignes sur votre profil..."></textarea>
+                    <label for="profile-social-website">Site web</label>
+                    <input id="profile-social-website" type="text" placeholder="https://..." autocomplete="off" />
+                    <label for="profile-social-discord">Discord</label>
+                    <input id="profile-social-discord" type="text" placeholder="https://discord.gg/..." autocomplete="off" />
+                    <label for="profile-social-twitch">Twitch</label>
+                    <input id="profile-social-twitch" type="text" placeholder="https://twitch.tv/..." autocomplete="off" />
+                    <label for="profile-social-youtube">YouTube</label>
+                    <input id="profile-social-youtube" type="text" placeholder="https://youtube.com/..." autocomplete="off" />
+                    <label for="profile-social-x">X / Twitter</label>
+                    <input id="profile-social-x" type="text" placeholder="https://x.com/..." autocomplete="off" />
+                </div>
+                <div class="profile-customization-preview">
+                    <p class="profile-preview-title">Apercu bio</p>
+                    <div id="profile-bio-preview" class="profile-bio-preview markdown-content">
+                        <p class="profile-preview-empty">Aucune bio renseignee.</p>
+                    </div>
+                    <div id="profile-social-preview" class="profile-social-preview" hidden></div>
+                </div>
+                <p id="profile-customization-status" class="profile-character-status" role="status" aria-live="polite" hidden></p>
+            </div>
+            <div id="profile-character" class="profile-character">
+                <div class="profile-character-header">
+                    <p class="profile-character-title">Personnages</p>
+                    <button id="character-open" class="tertiary-button profile-character-add" type="button">Personnages</button>
+                </div>
+                <p id="profile-character-locked" class="profile-character-locked" hidden>Connexion requise pour creer un personnage.</p>
+                <p id="character-summary" class="profile-character-empty">Aucun personnage enregistre.</p>
+            </div>
+            <div id="profile-feedback" class="profile-feedback">
+                <div class="profile-feedback-header">
+                    <p class="profile-feedback-title">Feedback</p>
+                    <span id="profile-save-state" class="profile-save-state is-idle">A jour</span>
+                </div>
+                <p id="profile-save-detail" class="profile-save-detail">Aucune modification en attente.</p>
+                <div class="profile-feedback-substates">
+                    <span id="profile-customization-state" class="profile-feedback-chip">Personnalisation: a jour</span>
+                    <span id="profile-characters-state" class="profile-feedback-chip">Personnages: a jour</span>
+                </div>
+                <div class="profile-feedback-history">
+                    <p class="profile-feedback-history-title">Edits recents</p>
+                    <ul id="profile-edit-history" class="profile-edit-history-list">
+                        <li class="profile-edit-history-empty">Aucune modification recente.</li>
+                    </ul>
+                </div>
+            </div>
+            <div id="profile-quick-actions" class="profile-quick-actions">
+                <p class="profile-quick-actions-title">Actions rapides</p>
+                <div class="profile-quick-actions-grid">
+                    <button id="quick-theme-toggle" class="secondary-button" type="button">Changer le theme</button>
+                    <button id="quick-favorites" class="secondary-button" type="button">Mes lieux favoris</button>
+                    <button id="quick-admin-users" class="secondary-button admin-locked" type="button" hidden>Admin utilisateurs</button>
+                    <button id="quick-admin-groups" class="secondary-button admin-locked" type="button" hidden>Admin groupes</button>
+                </div>
+            </div>
+            <div id="profile-account-security" class="profile-account-security">
+                <div class="profile-account-security-header">
+                    <p class="profile-account-security-title">Securite / compte</p>
+                    <span id="profile-account-oauth" class="profile-account-pill">Discord: --</span>
+                </div>
+                <div class="profile-account-grid">
+                    <div class="profile-account-row">
+                        <span class="profile-account-label">Provider</span>
+                        <span id="profile-account-provider" class="profile-account-value">Invite</span>
+                    </div>
+                    <div class="profile-account-row">
+                        <span class="profile-account-label">Discord</span>
+                        <span id="profile-account-discord" class="profile-account-value">Non connecte</span>
+                    </div>
+                    <div class="profile-account-row">
+                        <span class="profile-account-label">Derniere connexion</span>
+                        <span id="profile-account-last-login" class="profile-account-value">--</span>
+                    </div>
+                </div>
+                <button id="profile-revoke-session" class="danger-button" type="button">Revoquer cette session</button>
+                <p id="profile-revoke-status" class="profile-character-status" role="status" aria-live="polite" hidden></p>
+            </div>
+            <div class="profile-actions">
+                <button id="quick-admin-panel" class="secondary-button admin-locked" type="button" hidden>Admin carte</button>
+                <button id="login-button" class="secondary-button" type="button">Connexion Discord</button>
+                <button id="logout-button" class="secondary-button" type="button" hidden>Se deconnecter</button>
+            </div>
+        </div>
+    </div>
+    <div id="character-overlay" class="character-overlay" hidden>
+        <div class="character-dialog" role="dialog" aria-modal="true" aria-labelledby="character-dialog-title">
+            <header class="character-dialog-header">
+                <h3 id="character-dialog-title">Personnages</h3>
+                <button id="character-close" class="character-close" type="button" aria-label="Fermer la gestion des personnages">×</button>
+            </header>
+            <div class="character-dialog-toolbar">
+                <label class="sr-only" for="character-filter-search">Filtrer par nom</label>
+                <input id="character-filter-search" type="text" placeholder="Filtrer par nom..." autocomplete="off" />
+                <label class="sr-only" for="character-filter-group">Filtrer par groupe</label>
+                <select id="character-filter-group">
+                    <option value="">Tous les groupes</option>
+                </select>
+                <label class="sr-only" for="character-filter-active">Filtrer par statut actif</label>
+                <select id="character-filter-active">
+                    <option value="all">Tous</option>
+                    <option value="active">Actifs</option>
+                    <option value="inactive">Inactifs</option>
+                </select>
+                <button id="character-export" class="secondary-button" type="button">Exporter</button>
+                <button id="character-import" class="secondary-button" type="button">Importer</button>
+                <input id="character-import-file" type="file" accept="application/json,.json" hidden />
+            </div>
+            <div class="character-carousel">
+                <button id="character-carousel-prev" class="character-carousel-nav" type="button" aria-label="Page precedente">‹</button>
+                <div id="character-list" class="profile-character-list character-carousel-track"></div>
+                <button id="character-carousel-next" class="character-carousel-nav" type="button" aria-label="Page suivante">›</button>
+            </div>
+            <p id="character-empty" class="profile-character-empty" hidden>Aucun personnage enregistre.</p>
+            <p id="character-page-indicator" class="character-page-indicator">Page 1/1</p>
+            <div id="character-empty-state" class="character-empty-state" hidden>
+                <p class="character-empty-state-title">Aucun personnage pour le moment</p>
+                <p class="character-empty-state-text">Créez un premier personnage ou importez un fichier JSON existant.</p>
+                <div class="character-empty-state-actions">
+                    <button id="character-empty-create" class="primary-button" type="button">Créer un personnage</button>
+                    <button id="character-empty-import" class="secondary-button" type="button">Importer JSON</button>
+                </div>
+            </div>
+            <div id="character-form-fields" class="profile-character-fields">
+                <label for="character-name">Nom</label>
+                <input id="character-name" type="text" placeholder="Nom du personnage" autocomplete="off" />
+                <label for="character-bio">Bio</label>
+                <textarea id="character-bio" rows="4" placeholder="Bio rapide" autocomplete="off"></textarea>
+                <label for="character-avatar">Avatar (URL)</label>
+                <input id="character-avatar" type="text" placeholder="https://..." autocomplete="off" />
+                <label for="character-group">Groupe</label>
+                <select id="character-group">
+                    <option value="">Aucun groupe</option>
+                </select>
+                <label class="character-active-toggle" for="character-active">
+                    <input id="character-active" type="checkbox" />
+                    <span>Tag actif</span>
+                </label>
+            </div>
+            <div id="character-form-actions" class="profile-character-actions">
+                <button id="character-add" class="secondary-button" type="button">Nouveau</button>
+                <button id="character-duplicate" class="secondary-button" type="button">Dupliquer</button>
+                <button id="character-save" class="primary-button" type="button">Enregistrer</button>
+                <button id="character-delete" class="danger-button" type="button">Supprimer</button>
+            </div>
+            <p id="character-overlay-locked" class="profile-character-locked" hidden>Connexion requise pour creer un personnage.</p>
+            <ul id="character-errors" class="profile-inline-errors" hidden></ul>
+            <p id="character-status" class="profile-character-status" role="status" aria-live="polite" hidden></p>
+        </div>
+    </div>
+    <div id="user-admin-overlay" class="user-admin-overlay" hidden>
+        <div class="user-admin-dialog" role="dialog" aria-modal="true" aria-labelledby="user-admin-title">
+            <div id="user-admin-container" class="user-admin-container"></div>
+        </div>
+    </div>
+
+    <!-- 🧭 Panneau Exploration -->
+    <div id="sidebar">
+        <h2>Exploration</h2>
+
+        <!-- 🌍 Bouton pour masquer/afficher tous les continents -->
+        <button id="toggle-all-continents" class="continent-toggle global-toggle" type="button">
+            Tout masquer/afficher
+        </button>
+
+        <!-- 🔍 Barre de recherche avec bouton de réinitialisation -->
+        <div id="search-container">
+            <label for="search-bar" class="sr-only">Rechercher un lieu</label>
+            <input type="text" id="search-bar" placeholder="Rechercher un lieu..." autocomplete="off" />
+            <button id="clear-search" aria-label="Effacer la recherche" type="button">✕</button>
+            <span id="search-results-count" class="results-badge" data-state="all" aria-live="polite" aria-atomic="true">0 lieu</span>
+        </div>
+
+        <button id="add-location" class="primary-button admin-locked" type="button">Ajouter un lieu</button>
+<div id="validation-warnings" class="validation-warnings" aria-live="polite" hidden>
+            <h3 class="validation-warnings-title">Alertes de validation</h3>
+            <ul id="validation-warnings-list" class="validation-warnings-list"></ul>
+            <p id="validation-warnings-footnote" class="validation-warnings-footnote" hidden></p>
+        </div>
+
+        <div id="filters-container">
+            <button id="filters-advanced-toggle" class="secondary-button" type="button" aria-expanded="false" aria-controls="advanced-filters-panel">
+                Filtres avancés
+            </button>
+            <div id="advanced-filters-panel" hidden>
+                <fieldset class="filter-section" data-filter-section="types">
+                    <legend id="filter-types-label">Types</legend>
+                    <div id="filter-types" class="filter-choice-group" role="group" aria-labelledby="filter-types-label"></div>
+                    <p class="filter-empty" data-empty="types" hidden>Aucun type disponible</p>
+                </fieldset>
+                <fieldset class="filter-section" data-filter-section="tags">
+                    <legend id="filter-tags-label">Tags</legend>
+                    <div id="filter-tags" class="filter-choice-group" role="group" aria-labelledby="filter-tags-label"></div>
+                    <p class="filter-empty" data-empty="tags" hidden>Aucun tag disponible</p>
+                </fieldset>
+                <fieldset class="filter-section" data-filter-section="quests">
+                    <legend id="filter-quests-label">Présence de quêtes</legend>
+                    <div class="filter-radio-group" role="radiogroup" aria-labelledby="filter-quests-label">
+                        <label class="filter-radio">
+                            <input type="radio" name="filter-quests" value="any" checked>
+                            <span>Toutes</span>
+                        </label>
+                        <label class="filter-radio">
+                            <input type="radio" name="filter-quests" value="with">
+                            <span>Avec quêtes</span>
+                        </label>
+                        <label class="filter-radio">
+                            <input type="radio" name="filter-quests" value="without">
+                            <span>Sans quête</span>
+                        </label>
+                    </div>
+                </fieldset>
+                <fieldset class="filter-section" data-filter-section="statuses">
+                    <legend id="filter-statuses-label">Statuts d'évènement</legend>
+                    <div id="filter-statuses" class="filter-choice-group" role="group" aria-labelledby="filter-statuses-label"></div>
+                    <p class="filter-empty" data-empty="statuses" hidden>Aucun statut disponible</p>
+                </fieldset>
+            </div>
+            <button id="reset-filters" class="icon-button" aria-label="Réinitialiser les filtres" type="button">↺</button>
+            <button id="random-location" class="icon-button" type="button" aria-label="Choisir un lieu aléatoire">🎲</button>
+        </div>
+        <div id="clustering-container" class="toggle-row">
+            <label for="clustering-toggle" class="toggle-label">
+                <input type="checkbox" id="clustering-toggle" />
+                <span>Regrouper les marqueurs</span>
+            </label>
+            <span id="clustering-metrics" class="toggle-hint" data-state="off" aria-live="polite" aria-atomic="true">📍 0/0</span>
+        </div>
+
+        <div id="marker-scale-container" class="slider-row">
+            <label for="marker-size" class="slider-label">Taille des marqueurs</label>
+            <div class="slider-control">
+                <input type="range" id="marker-size" min="70" max="130" step="5" value="100" aria-label="Ajuster la taille des marqueurs" />
+                <span id="marker-size-value" class="slider-value" aria-live="polite" aria-atomic="true">100%</span>
+            </div>
+        </div>
+
+        <div id="exploration-tabs" class="segmented-control" role="tablist">
+            <button id="tab-all-locations" class="tab-button active" type="button" data-view="all" aria-pressed="true">Tous les lieux</button>
+            <button id="tab-favorites" class="tab-button" type="button" data-view="favorites" aria-pressed="false">Favoris</button>
+        </div>
+
+        <div id="favorites-container" class="favorites-container" hidden aria-live="polite" aria-atomic="true"></div>
+        <div id="continents-container"></div>
+    </div>
+
+    <!-- 🏰 Panneau d'information des lieux -->
+    <div id="info-sidebar">
+        <div id="info-header">
+            <h3 id="info-title">Titre du lieu</h3>
+            <div class="info-actions">
+                <button id="edit-location" class="icon-button" type="button" aria-label="Modifier le lieu" disabled>✎</button>
+                <button id="favorite-toggle" class="icon-button favorite-toggle" type="button" aria-label="Ajouter aux favoris" aria-pressed="false" disabled>☆</button>
+                <button id="close-info-sidebar" class="close-btn" type="button" aria-label="Fermer le panneau">✖</button>
+            </div>
+        </div>
+
+        <!-- 📂 Onglets de navigation -->
+        <div id="info-tabs" role="tablist" aria-label="Sections d'information du lieu">
+            <button id="info-tab-description" class="info-tab active" type="button" role="tab" data-tab="description" aria-controls="description-content" aria-selected="true" tabindex="0">Description</button>
+            <button id="info-tab-image" class="info-tab" type="button" role="tab" data-tab="image" aria-controls="image-content" aria-selected="false" tabindex="-1">Image</button>
+        </div>
+
+
+        <!-- 🎵 Lecteur audio compact -->
+
+        <div id="audio-container">
+            <p id="audio-title">🎧 Ambiance sonore</p>
+            <div class="audio-progress-row">
+                <button id="audio-play-toggle" type="button" aria-label="Lire/Pause">▶</button>
+                <div class="audio-progress">
+                    <input id="audio-progress" type="range" min="0" max="0" step="0.1" value="0" />
+                    <div class="audio-time">
+                        <span id="audio-current">0:00</span> / <span id="audio-duration">0:00</span>
+                    </div>
+                </div>
+                <div class="audio-volume-wrap">
+                    <button id="audio-volume-button" type="button" aria-label="Volume">🔊</button>
+                    <input id="audio-volume" type="range" min="0" max="1" step="0.01" value="1" />
+                </div>
+            </div>
+            <div class="audio-controls">
+                <label class="audio-loop">
+                    <input id="audio-loop" type="checkbox" />
+                    Loop
+                </label>
+                <a id="audio-download" class="audio-download" href="#" download hidden>Télécharger</a>
+                <label class="audio-speed">
+                    Vitesse
+                    <select id="audio-speed">
+                        <option value="0.75">0.75x</option>
+                        <option value="1" selected>1x</option>
+                        <option value="1.25">1.25x</option>
+                        <option value="1.5">1.5x</option>
+                        <option value="2">2x</option>
+                    </select>
+                </label>
+            </div>
+            <button id="audio-fallback" class="audio-fallback" type="button" hidden>
+                🎧 Lancer la lecture
+            </button>
+            <p id="audio-status" class="audio-status" role="status" aria-live="polite" hidden></p>
+            <audio id="audio-player" preload="metadata" hidden>
+                Votre navigateur ne supporte pas l'élément audio.
+            </audio>
+        </div>
+
+        <!-- 📚 Contenu des onglets -->
+        <div id="info-content">
+            <div id="description-content" class="info-content active" role="tabpanel" aria-labelledby="info-tab-description" tabindex="0">
+                <p id="description-text">Description du lieu...</p>
+
+                <!-- ➕ Sections d'informations supplémentaires -->
+                <div id="lore-section" class="extra-section" data-section="lore"></div>
+                <div id="history-section" class="extra-section" data-section="history"></div>
+                <div id="quests-section" class="extra-section" data-section="quests"></div>
+                <div id="pnjs-section" class="extra-section" data-section="pnj"></div>
+                <div id="timeline-section" class="extra-section" data-section="timeline"></div>
+                <div id="instances-section" class="extra-section" data-section="instances"></div>
+                <div id="noble-families-section" class="extra-section" data-section="noble-families"></div>
+
+            </div>
+
+            <div id="image-content" class="info-content" role="tabpanel" aria-labelledby="info-tab-image" aria-hidden="true" tabindex="-1">
+                <div id="image-gallery"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 📜 Historique modernisé en bas à gauche -->
+        <div id="history-container">
+            <p id="history-title">Historique</p>
+            <div id="history-list"></div> <!-- Les éléments de l'historique seront insérés ici -->
+            <button id="history-back" type="button">Retour</button> <!-- Bouton Retour placé sous l'historique -->
+        </div>
+
+        <div id="events-feed" aria-live="polite" aria-atomic="false">
+            <div class="feed-header">
+                <h4 id="events-feed-title">Flux temps réel</h4>
+                <div class="feed-header-actions">
+                    <label for="events-filter" class="sr-only">Filtrer les événements</label>
+                    <select id="events-filter">
+                        <option value="all">Tous</option>
+                        <option value="annotations">Annotations</option>
+                        <option value="quests">Quêtes</option>
+                        <option value="sync">Synchronisations</option>
+                        <option value="telemetry">Erreurs</option>
+                    </select>
+                    <button id="events-feed-toggle" class="feed-toggle" type="button" aria-expanded="true" aria-controls="events-feed-empty events-feed-list" title="Réduire le flux temps réel">
+                        <span aria-hidden="true">−</span>
+                    </button>
+                </div>
+            </div>
+            <div id="events-feed-empty">Aucun événement pour le moment.</div>
+            <ul id="events-feed-list"></ul>
+        </div>
+
+        <!-- 🗺️ Conteneur de la carte -->
+        <div class="map-wrapper">
+            <div id="map"></div>
+        </div>
+
+    <!-- 🎛️ Barre de contrôle en bas à droite -->
+    <div id="map-controls">
+        <a id="back-home" class="map-home-link map-home-action" href="https://cartehesta.dannytech.fr/" aria-label="Accueil Carte Hesta" title="Accueil Carte Hesta"><span aria-hidden="true">&#8962;</span></a>
+        <a class="map-home-link map-hesta-link" href="https://hesta.dannytech.fr/" aria-label="Portail Hesta" title="Portail Hesta"><span class="hesta-wordmark">HESTA</span></a>
+        <a class="map-home-link map-pa-link" href="https://pahesta.dannytech.fr/" aria-label="Système PA" title="Système PA"><svg class="map-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg></a>
+        <button id="zoom-in" aria-label="Zoom avant" type="button"><span aria-hidden="true">&#x2795;</span></button>
+        <button id="zoom-out" aria-label="Zoom arrière" type="button"><span aria-hidden="true">&#x2796;</span></button>
+        <button id="reset-map" aria-label="Recentrer la carte" type="button" title="Recentrer"><span aria-hidden="true">&#x21BA;</span></button>
+        <button id="fullscreen-map" aria-label="Plein écran" type="button" title="Plein écran"><span aria-hidden="true">&#x2922;</span></button>
+        <button id="measure-distance" class="map-control-button" type="button" aria-label="Mesurer une distance" aria-pressed="false" title="Mesurer une distance"><span aria-hidden="true">&#x1F4CF;</span></button>
+        <button id="capture-coordinates" class="map-control-button" type="button" aria-label="Obtenir les coordonnées" aria-pressed="false" title="Obtenir les coordonnées"><span aria-hidden="true">&#x1F4CD;</span></button>
+        <button id="annotation-mode" class="map-control-button" type="button" aria-label="Ajouter une annotation" aria-pressed="false" title="Ajouter une annotation"><span aria-hidden="true">&#x1F58C;</span></button>
+        <button id="temporary-paint" class="map-control-button" type="button" aria-label="Tracer un schema temporaire" aria-pressed="false" title="Tracer un schema temporaire"><span aria-hidden="true">&#x270E;</span></button>
+        <button id="clear-temporary-paint" class="map-control-button" type="button" aria-label="Effacer les traces temporaires" title="Effacer les traces temporaires"><span aria-hidden="true">&#x232B;</span></button>
+        <div id="theme-toggle" class="theme-toggle" role="group" aria-label="Mode d'affichage">
+            <button type="button" class="theme-toggle-option active" data-theme="dark" aria-pressed="true" title="Mode sombre">
+                <span aria-hidden="true">&#x1F319;</span>
+            </button>
+            <button type="button" class="theme-toggle-option" data-theme="light" aria-pressed="false" title="Mode clair">
+                <span aria-hidden="true">&#x2600;</span>
+            </button>
+        </div>
+        <span id="zoom-level">100%</span>
+    </div>
+
+    <!-- 🖼️ Lightbox pour les médias -->
+    <div id="media-lightbox" class="media-lightbox" role="dialog" aria-modal="true" hidden>
+        <button id="media-lightbox-close" class="media-lightbox-close" type="button" aria-label="Fermer l'aperçu">×</button>
+        <img id="media-lightbox-image" class="media-lightbox-image" alt="">
+        <p id="media-lightbox-caption" class="media-lightbox-caption"></p>
+    </div>
+    <div id="location-editor" class="editor-overlay" role="presentation" hidden>
+        <div class="editor-dialog" role="dialog" aria-modal="true" aria-labelledby="location-editor-title">
+            <header class="editor-header">
+                <h2 id="location-editor-title">Éditer un lieu</h2>
+                <button id="location-editor-close" class="editor-close" type="button" aria-label="Fermer">×</button>
+            </header>
+            <form id="location-editor-form" novalidate autocomplete="off">
+                <div class="form-warning-panel" data-role="validation-warnings" aria-live="polite" hidden>
+                    <strong class="form-warning-title">Alertes de validation</strong>
+                    <ul class="form-warning-list" data-role="validation-warnings-list"></ul>
+                    <p class="form-warning-footnote" data-role="validation-warnings-footnote" hidden></p>
+                </div>
+                <div class="editor-content">
+                    <fieldset class="editor-section" data-drop-zone="audio">
+                        <legend>Informations générales</legend>
+                        <div class="form-row">
+                            <label for="editor-name">Nom</label>
+                            <input id="editor-name" name="name" type="text" required />
+                            <p class="form-error" data-error-for="name"></p>
+                        </div>
+                        <div class="form-row">
+                            <label for="editor-continent">Continent</label>
+                            <input id="editor-continent" name="continent" type="text" required />
+                            <p class="form-error" data-error-for="continent"></p>
+                        </div>
+                        <div class="form-row">
+                            <label for="editor-type">Type</label>
+                            <select id="editor-type" name="type" required></select>
+                            <p class="form-note">Choisissez dans la liste ou cliquez directement sur une icone ci-dessous.</p>
+                            <div class="type-picker-grid" data-role="type-option-grid" aria-label="Apercu visuel des types"></div>
+                            <p class="form-error" data-error-for="type"></p>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-row">
+                                <label for="editor-x">Coordonnée X</label>
+                                <input id="editor-x" name="x" type="number" step="1" required />
+                                <p class="form-error" data-error-for="x"></p>
+                            </div>
+                            <div class="form-row">
+                                <label for="editor-y">Coordonnée Y</label>
+                                <input id="editor-y" name="y" type="number" step="1" required />
+                                <p class="form-error" data-error-for="y"></p>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="editor-description">Description<br><span class="hint">Resume court affiche dans la carte et les apercus.</span></label>
+                            <div class="markdown-toolbar" data-role="description-toolbar">
+                                <button type="button" class="toolbar-button" data-md="**|**" aria-label="Texte gras"><span>G</span></button>
+                                <button type="button" class="toolbar-button" data-md="*|*" aria-label="Texte italique"><span>I</span></button>
+                                <button type="button" class="toolbar-button" data-md="### |" aria-label="Titre niveau 3"><span>H3</span></button>
+                                <button type="button" class="toolbar-button" data-md="- |" aria-label="Liste"><span>•</span></button>
+                                <button type="button" class="toolbar-button" data-md="> |" aria-label="Citation"><span>&gt;</span></button>
+                                <button type="button" class="toolbar-button" data-md="[texte](url)" aria-label="Lien">🔗</button>
+                                <span class="toolbar-hint">Markdown</span>
+                            </div>
+                            <div class="form-assistant-panel">
+                                <p class="form-note" data-role="description-assistant-note">Utilisez Historique et Lore comme sources longues, puis generez ici un brouillon court a relire avant enregistrement.</p>
+                                <div class="form-assistant-actions">
+                                    <button type="button" class="secondary-button" data-action="generate-description">Generer depuis lore / historique</button>
+                                    <button type="button" class="tertiary-button" data-action="improve-description">Ameliorer la description</button>
+                                </div>
+                            </div>
+                            <div class="markdown-draft-status" data-role="description-draft-status" hidden>
+                                <span class="draft-pip" aria-hidden="true"></span>
+                                <span class="draft-text">
+                                    <span data-role="description-draft-message"></span>
+                                    <span data-role="description-draft-timestamp"></span>
+                                </span>
+                                <button type="button" class="draft-clear-button" data-action="clear-description-draft">Effacer le brouillon</button>
+                            </div>
+                            <textarea id="editor-description" name="description" rows="6"></textarea>
+                            <div class="markdown-preview" data-preview="description-markdown">
+                                <p class="markdown-preview-empty">Previsualisation en direct du rendu Markdown.</p>
+                                <div class="markdown-preview-body markdown-content" data-role="description-preview-body" hidden></div>
+                            </div>
+                            <p class="form-error" data-error-for="description"></p>
+                            <p class="form-error" data-error-for="descriptionAssistant" hidden></p>
+                            <div class="form-suggestion-panel" data-role="link-suggestions">
+                                <div class="form-suggestion-header">
+                                    <strong>Suggestions de liens</strong>
+                                    <div class="form-suggestion-actions">
+                                        <button type="button" class="tertiary-button" data-action="refresh-link-suggestions">Mettre a jour</button>
+                                        <button type="button" class="tertiary-button" data-action="apply-link-suggestions">Appliquer tout</button>
+                                    </div>
+                                </div>
+                                <ul class="form-suggestion-list" data-role="link-suggestions-list"></ul>
+                                <p class="form-suggestion-empty" data-role="link-suggestions-empty">Aucune suggestion pour le moment.</p>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label for="editor-audio">Audio (optionnel)</label>
+                            <div class="input-with-button">
+                                <input id="editor-audio" name="audio" type="url" placeholder="assets/audio/example.mp3" />
+                                <button type="button" class="secondary-button" data-action="upload-audio">Importer un audio</button>
+                            </div>
+                            <p class="form-error" data-error-for="audio"></p>
+                        </div>
+                        <div class="form-row">
+                            <label for="editor-tags">Tags</label>
+                            <div class="input-with-button">
+                                <input id="editor-tags" name="tags" type="text" placeholder="commerce, port, quete" list="editor-tags-suggestions" />
+                                <button type="button" class="secondary-button" data-action="add-tag">Ajouter</button>
+                            </div>
+                            <datalist id="editor-tags-suggestions"></datalist>
+                            <div class="tag-chip-list" data-role="tags-list" aria-live="polite"></div>
+                            <p class="form-error" data-error-for="tags"></p>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="editor-section" data-drop-zone="image">
+                        <legend>Images</legend>
+                        <div class="editor-list" data-role="image-list"></div>
+                        <div class="editor-actions-row">
+                            <button type="button" class="secondary-button" data-action="add-image">Ajouter une image</button>
+                            <button type="button" class="secondary-button" data-action="upload-image">Importer une image</button>
+                        </div>
+                        <p class="form-error" data-error-for="images"></p>
+                        <div class="media-preview" data-preview="images"></div>
+                    </fieldset>
+
+                    <fieldset class="editor-section" data-drop-zone="video">
+                        <legend>Vidéos</legend>
+                        <div class="editor-list" data-role="video-list"></div>
+                        <button type="button" class="secondary-button" data-action="add-video">Ajouter une vidéo</button>
+                        <p class="form-error" data-error-for="videos"></p>
+                        <div class="media-preview" data-preview="videos"></div>
+                    </fieldset>
+
+                    <fieldset class="editor-section" data-drop-zone="pnj">
+                        <legend>Personnages (PNJ)</legend>
+                        <div class="editor-list" data-role="pnj-list"></div>
+                        <button type="button" class="secondary-button" data-action="add-pnj">Ajouter un PNJ</button>
+                        <p class="form-error" data-error-for="pnjs"></p>
+                        <div class="media-preview" data-preview="pnjs"></div>
+                    </fieldset>
+
+                    <fieldset class="editor-section">
+                        <legend>Détails supplémentaires</legend>
+                        <div class="form-row markdown-list-row">
+                            <label id="editor-lore-label">Lore<br><span class="hint">(Source longue - contexte, ambiance, culture, factions, details d'univers)</span></label>
+                            <div class="markdown-list" data-role="lore-list" role="group" aria-labelledby="editor-lore-label"></div>
+                            <button type="button" class="secondary-button markdown-list-add" data-action="add-lore-entry">Ajouter un element de lore</button>
+                        </div>
+                        <div class="form-row markdown-list-row">
+                            <label id="editor-history-label">Historique<br><span class="hint">(Source longue - evenements passes, evolution et chronologie locale)</span></label>
+                            <div class="markdown-list" data-role="history-list" role="group" aria-labelledby="editor-history-label"></div>
+                            <button type="button" class="secondary-button markdown-list-add" data-action="add-history-entry">Ajouter un historique</button>
+                        </div>
+                        <div class="form-row markdown-list-row">
+                            <label id="editor-quests-label">Quetes<br><span class="hint">(Markdown - un bloc par element)</span></label>
+                            <div class="markdown-list" data-role="quests-list" role="group" aria-labelledby="editor-quests-label"></div>
+                            <button type="button" class="secondary-button markdown-list-add" data-action="add-quests-entry">Ajouter une quete</button>
+                        </div>
+                        <div class="form-row markdown-list-row">
+                            <label id="editor-instances-label">Instances<br><span class="hint">(Markdown - un bloc par element)</span></label>
+                            <div class="markdown-list" data-role="instances-list" role="group" aria-labelledby="editor-instances-label"></div>
+                            <button type="button" class="secondary-button markdown-list-add" data-action="add-instances-entry">Ajouter une instance</button>
+
+                            <label id="editor-noble-families-label">Familles nobles<br><span class="hint">(Markdown - un bloc par famille)</span></label>
+                            <div class="markdown-list" data-role="noble-families-list" role="group" aria-labelledby="editor-noble-families-label"></div>
+                            <button type="button" class="secondary-button markdown-list-add" data-action="add-noble-families-entry">Ajouter une famille</button>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="editor-section" id="quest-events-section">
+                        <legend>Événements de quête</legend>
+                        <div class="quest-events-disabled" data-role="quest-events-disabled" hidden>
+                            Enregistrez le lieu pour gérer les événements de quête.
+                        </div>
+                        <div class="quest-events-list-wrapper" data-role="quest-events" hidden>
+                            <p class="quest-events-empty" data-role="quest-events-empty">Aucun événement enregistré pour ce lieu.</p>
+                            <ul class="quest-events-list" data-role="quest-events-list"></ul>
+                        </div>
+                        <div class="quest-event-form" data-role="quest-event-form">
+                            <div class="form-grid">
+                                <div class="form-row">
+                                    <label for="quest-event-id">Identifiant de quête</label>
+                                    <input id="quest-event-id" name="quest-event-id" type="text" data-role="quest-event-quest-id" placeholder="ex: QST-012" />
+                                </div>
+                                <div class="form-row">
+                                    <label for="quest-event-status">Statut</label>
+                                    <select id="quest-event-status" name="quest-event-status" data-role="quest-event-status">
+                                        <option value="planifie">Planifiée</option>
+                                        <option value="en cours" selected>En cours</option>
+                                        <option value="termine">Terminée</option>
+                                        <option value="bloque">Bloquée</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label for="quest-event-milestone">Jalon</label>
+                                    <input id="quest-event-milestone" name="quest-event-milestone" type="text" data-role="quest-event-milestone" placeholder="Étape ou objectif" />
+                                </div>
+                                <div class="form-row">
+                                    <label for="quest-event-progress-current">Progression</label>
+                                    <div class="input-inline">
+                                        <input id="quest-event-progress-current" name="quest-event-progress-current" type="number" min="0" data-role="quest-event-progress-current" placeholder="Actuel" />
+                                        <span class="input-separator">/</span>
+                                        <input id="quest-event-progress-max" name="quest-event-progress-max" type="number" min="0" data-role="quest-event-progress-max" placeholder="Total" />
+                                    </div>
+                                </div>
+                                <div class="form-row form-row-wide">
+                                    <label for="quest-event-note">Notes complémentaires</label>
+                                    <textarea id="quest-event-note" name="quest-event-note" rows="2" data-role="quest-event-note" placeholder="Informations additionnelles (optionnel)"></textarea>
+                                </div>
+                            </div>
+                            <div class="editor-actions-row quest-event-actions">
+                                <button type="button" class="secondary-button" data-action="quest-event-cancel" hidden>Annuler la modification</button>
+                                <button type="button" class="secondary-button" data-action="quest-event-submit">Enregistrer un événement</button>
+                            </div>
+                            <p class="form-error" data-error-for="quest-events"></p>
+                        </div>
+                    </fieldset>
+                </div>
+                <input type="file" id="editor-image-upload" accept="image/*" hidden />
+                <input type="file" id="editor-audio-upload" accept="audio/*" hidden />
+
+                <footer class="editor-actions">
+                    <p class="form-error" data-error-for="form"></p>
+                    <button type="button" class="danger-button" data-action="delete">Supprimer</button>
+                    <button type="button" class="secondary-button" data-action="cancel">Annuler</button>
+                    <button type="submit" class="primary-button" data-action="submit">Enregistrer</button>
+                </footer>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-overlay" class="admin-overlay" role="presentation" hidden>
+        <div class="admin-dialog" id="admin-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-title">
+            <header class="admin-header">
+                <h2 id="admin-title">Administration carte</h2>
+                <button id="admin-close" class="admin-close" type="button" aria-label="Fermer le panneau admin">×</button>
+            </header>
+            <div class="admin-content">
+                <section class="admin-section" id="admin-section-status">
+                    <h3>Statut</h3>
+                    <p id="admin-auth-status">Connexion requise.</p>
+                </section>
+
+                <section class="admin-section" id="admin-section-actions">
+                    <h3>Actions</h3>
+                    <div class="admin-actions">
+                        <button id="admin-user-button" class="secondary-button" type="button">Gestion utilisateurs</button>
+                        <button id="admin-group-button" class="secondary-button" type="button">Gestion groupes JDR</button>
+                        <a class="secondary-button" href="/?admin=home">Admin accueil</a>
+                        <a class="secondary-button" href="/timeline/?admin=timeline">Admin chronologie</a>
+                        <button id="download-assets-button" class="secondary-button" type="button">Télécharger assets</button>
+                    </div>
+                </section>
+
+                <section class="admin-section" id="admin-section-live">
+                    <h3>Tableau de bord live</h3>
+                    <div id="admin-live-metrics" class="admin-live-metrics"></div>
+                    <p id="admin-live-empty" class="admin-live-empty">Aucune metrique disponible.</p>
+                </section>
+
+                <section class="admin-section" id="admin-section-alerts">
+                    <h3>Alertes de validation</h3>
+                    <div id="admin-validation-warnings" class="validation-warnings" aria-live="polite">
+                        <ul id="admin-validation-list" class="validation-warnings-list"></ul>
+                        <p id="admin-validation-footnote" class="validation-warnings-footnote" hidden></p>
+                    </div>
+                </section>
+
+                <section class="admin-section" id="admin-section-description-audit">
+                    <div class="admin-section-heading">
+                        <h3>Audit descriptions</h3>
+                        <button id="admin-description-audit-refresh" class="secondary-button" type="button">Rafraichir</button>
+                    </div>
+                    <p id="admin-description-audit-summary" class="admin-availability-hint">Aucun audit lance.</p>
+                    <ul id="admin-description-audit-list" class="validation-warnings-list"></ul>
+                    <p id="admin-description-audit-empty" class="admin-availability-empty" hidden>Aucune incoherence narrative detectee.</p>
+                </section>
+
+                <section class="admin-section" id="admin-section-telemetry">
+                    <h3>Télémétrie / erreurs</h3>
+                    <ul id="admin-telemetry-list" class="telemetry-list"></ul>
+                    <p id="admin-telemetry-empty">Aucune erreur récente.</p>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- ⚙️ Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.3/dist/purify.min.js" defer></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script type="module" src="./js/main.js"></script>
+
+</body>
+</html>

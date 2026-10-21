@@ -1,0 +1,29 @@
+{
+  "name": "carte-interactive",
+  "version": "0.17.49",
+  "private": true,
+  "scripts": {
+    "test:ui": "node tools/runIsolatedTests.js",
+    "test:ui:chromium": "node tools/runIsolatedTests.js --project=chromium",
+    "test:ui:firefox": "node tools/runIsolatedTests.js --project=firefox",
+    "test:api": "node tools/runIsolatedTests.js --project=api",
+    "test:ui:headed": "node tools/runIsolatedTests.js --headed",
+    "test:ui:update": "node tools/runIsolatedTests.js --update-snapshots",
+    "test:unit": "node tools/runIsolatedTests.js --unit",
+    "lint": "npm run lint:encoding",
+    "lint:encoding": "node tools/lintEncoding.js",
+    "build:static": "node tools/buildPublic.js",
+    "serve": "node server.js",
+    "sync:mock": "node tools/mockRemoteSync.js",
+    "test:publication": "node tools/runIsolatedTests.js --publication",
+    "test:storage": "node tools/runIsolatedTests.js --storage",
+    "test:isolation": "node --test tests/isolation/*.test.cjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.46.0",
+    "dompurify": "3.0.3",
+    "http-server": "^14.1.1",
+    "leaflet": "1.9.4",
+    "leaflet.markercluster": "1.5.3"
+  }
+}

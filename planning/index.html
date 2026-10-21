@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte Hesta | Planning JDR</title>
+    <meta name="description" content="Planning JDR Hesta pour organiser les sessions, visualiser les disponibilites et preparer les prochaines parties." />
+    <meta property="og:title" content="Carte Hesta | Planning JDR" />
+    <meta property="og:description" content="Une page dediee a la logistique des parties JDR et aux disponibilites des groupes." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://cartehesta.dannytech.fr/planning/" />
+    <meta property="og:image" content="https://cartehesta.dannytech.fr/assets/logo.png" />
+    <link rel="stylesheet" href="/planning.css">
+    <link rel="stylesheet" href="/assets/hesta-identity.css">
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+</head>
+<body>
+    <a class="planning-skip-link" href="#planning-main">Aller au contenu principal</a>
+    <div class="planning-shell">
+        <header class="planning-header">
+            <div class="planning-brand">
+                <a class="planning-brand-mark" href="/" aria-label="Accueil Carte Hesta">
+                    <img src="/assets/logo.png" alt="" />
+                </a>
+                <span class="planning-brand-text">
+                    <strong><a class="hesta-wordmark" href="https://hesta.dannytech.fr/">HESTA</a><span class="hesta-divider" aria-hidden="true">·</span>Carte Hesta</strong>
+                    <small>Planning des parties</small>
+                </span>
+            </div>
+            <nav class="planning-nav" aria-label="Navigation principale">
+                <a href="/">Accueil</a>
+                <a href="https://pahesta.dannytech.fr/">Système PA</a>
+                <a href="/map/">Carte</a>
+                <a href="/timeline/">Chronologie</a>
+                <a href="/planning/" aria-current="page">Planning</a>
+                <a href="/changelog/">Changelog</a>
+            </nav>
+            <div class="planning-header-actions">
+                <a class="planning-link-button" href="/map/">Entrer sur la carte</a>
+                <a id="planning-admin-link" class="planning-link-button planning-link-button-admin" href="#planning-admin" hidden>Admin planning</a>
+            </div>
+        </header>
+
+        <main id="planning-main" class="planning-main">
+            <section class="planning-hero" aria-labelledby="planning-title">
+                <div>
+                    <p class="planning-kicker">P7.1 - Agenda JDR</p>
+                    <h1 id="planning-title">Trouver une date sans fouiller trois conversations</h1>
+                    <p class="planning-lead">
+                        Cette page centralise un vrai agenda date : chaque joueur peut declarer ses disponibilites
+                        a n'importe quelle date et heure, puis le MJ compare ces signaux avec les sessions candidates.
+                    </p>
+                    <div class="planning-hero-actions">
+                        <a class="planning-cta planning-cta-primary" href="#planning-agenda">Voir l'agenda</a>
+                        <a class="planning-cta" href="#planning-dated">Renseigner mes dispos</a>
+                    </div>
+                </div>
+                <div class="planning-hero-meta" aria-label="Etat du module planning">
+                    <div class="planning-stat">
+                        <span>Version</span>
+                        <strong id="planning-version">0.17.49</strong>
+                    </div>
+                    <div class="planning-stat">
+                        <span>Statut</span>
+                        <strong>Agenda date</strong>
+                    </div>
+                    <div class="planning-stat">
+                        <span>Objectif</span>
+                        <strong>Sessions</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="planning-panel planning-overview" aria-labelledby="planning-overview-title">
+                <div>
+                    <p class="planning-panel-kicker">Logistique</p>
+                    <h2 id="planning-overview-title">Ce que le planning devra centraliser</h2>
+                </div>
+                <div class="planning-overview-grid">
+                    <article>
+                        <span aria-hidden="true">01</span>
+                        <h3>Disponibilites joueurs</h3>
+                        <p>Chaque joueur indique ses creneaux disponibles, incertains ou indisponibles.</p>
+                    </article>
+                    <article>
+                        <span aria-hidden="true">02</span>
+                        <h3>Lecture MJ</h3>
+                        <p>Les meilleurs creneaux ressortent rapidement, par groupe ou campagne.</p>
+                    </article>
+                    <article>
+                        <span aria-hidden="true">03</span>
+                        <h3>Session suivante</h3>
+                        <p>Une date candidate peut etre confirmee puis relayee au groupe.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section id="planning-agenda" class="planning-panel" aria-labelledby="planning-agenda-title">
+                <div class="planning-panel-header">
+                    <div>
+                        <p class="planning-panel-kicker">Agenda date</p>
+                        <h2 id="planning-agenda-title">Sessions candidates</h2>
+                    </div>
+                    <p id="planning-agenda-status" class="planning-status" role="status" aria-live="polite">Chargement de l'agenda...</p>
+                </div>
+                <div class="planning-agenda-toolbar" aria-label="Navigation de l'agenda">
+                    <button id="planning-month-prev" class="planning-cta" type="button">Mois precedent</button>
+                    <h3 id="planning-agenda-month">Mois en cours</h3>
+                    <button id="planning-month-next" class="planning-cta" type="button">Mois suivant</button>
+                    <button id="planning-month-today" class="planning-cta" type="button">Aujourd'hui</button>
+                </div>
+                <div class="planning-agenda-weekdays" aria-hidden="true">
+                    <span>Lun</span>
+                    <span>Mar</span>
+                    <span>Mer</span>
+                    <span>Jeu</span>
+                    <span>Ven</span>
+                    <span>Sam</span>
+                    <span>Dim</span>
+                </div>
+                <div id="planning-agenda-grid" class="planning-agenda-grid" aria-label="Agenda mensuel"></div>
+                <div class="planning-agenda-list-wrap">
+                    <h3>Sessions du mois</h3>
+                    <div id="planning-agenda-list" class="planning-agenda-list" aria-live="polite"></div>
+                </div>
+            </section>
+
+            <section id="planning-dated" class="planning-panel planning-dated" aria-labelledby="planning-dated-title">
+                <div class="planning-panel-header">
+                    <div>
+                        <p class="planning-panel-kicker">Disponibilites datees</p>
+                        <h2 id="planning-dated-title">Mes disponibilites dans l'agenda</h2>
+                    </div>
+                    <p id="planning-dated-status" class="planning-status" role="status" aria-live="polite">Connectez-vous pour renseigner vos disponibilites.</p>
+                </div>
+                <form id="planning-dated-form" class="planning-dated-form">
+                    <label>
+                        Dates
+                        <input id="planning-dated-date" type="date" required>
+                        <small>Chaque date choisie est ajoutee au lot ci-dessous.</small>
+                    </label>
+                    <label>
+                        Debut
+                        <input id="planning-dated-start" type="time" required>
+                    </label>
+                    <label>
+                        Fin
+                        <input id="planning-dated-end" type="time" required>
+                    </label>
+                    <label>
+                        Statut
+                        <select id="planning-dated-response">
+                            <option value="available">Disponible</option>
+                            <option value="maybe">Incertain</option>
+                            <option value="busy">Indisponible</option>
+                        </select>
+                    </label>
+                    <label class="planning-dated-comment">
+                        Note optionnelle
+                        <input id="planning-dated-comment" type="text" maxlength="280" placeholder="Ex: apres 20h30 seulement">
+                    </label>
+                    <div id="planning-dated-selected-dates" class="planning-selected-dates" aria-live="polite"></div>
+                    <button id="planning-dated-save" class="planning-cta planning-cta-primary" type="submit">Ajouter ce creneau</button>
+                </form>
+                <div id="planning-dated-list" class="planning-dated-list" aria-live="polite">
+                    <article class="planning-dated-empty">Aucune disponibilite datee chargee.</article>
+                </div>
+            </section>
+
+            <section id="planning-admin" class="planning-panel planning-admin" aria-labelledby="planning-admin-title" hidden>
+                <div class="planning-panel-header">
+                    <div>
+                        <p class="planning-panel-kicker">Administration</p>
+                        <h2 id="planning-admin-title">Sessions candidates</h2>
+                    </div>
+                    <p id="planning-admin-status" class="planning-status" role="status" aria-live="polite">Reserve aux admins.</p>
+                </div>
+                <form id="planning-admin-form" class="planning-admin-form">
+                    <input id="planning-admin-session-id" type="hidden">
+                    <label>
+                        Titre
+                        <input id="planning-admin-title-input" type="text" maxlength="140" required placeholder="Session de campagne">
+                    </label>
+                    <label>
+                        Dates
+                        <input id="planning-admin-date" type="date" required>
+                        <small>Selectionnez plusieurs dates avant de creer les sessions.</small>
+                    </label>
+                    <label>
+                        Debut
+                        <input id="planning-admin-start" type="time" required>
+                    </label>
+                    <label>
+                        Duree
+                        <input id="planning-admin-duration" type="number" min="30" max="720" step="15" value="180">
+                    </label>
+                    <label>
+                        Groupe
+                        <input id="planning-admin-group" type="text" maxlength="140" placeholder="Groupe principal">
+                    <label for="planning-admin-group-id">Groupe autorisé (indépendant du libellé)</label>
+                    <select id="planning-admin-group-id"><option value="">Aucun groupe (administrateur)</option></select>
+                    </label>
+                    <label>
+                        Statut
+                        <select id="planning-admin-session-status">
+                            <option value="candidate">Candidate</option>
+                            <option value="confirmed">Confirmee</option>
+                            <option value="cancelled">Annulee</option>
+                        </select>
+                    </label>
+                    <label class="planning-admin-description">
+                        Description
+                        <textarea id="planning-admin-description" maxlength="600" rows="4" placeholder="Objectif, contexte, notes MJ..."></textarea>
+                    </label>
+                    <div id="planning-admin-selected-dates" class="planning-selected-dates" aria-live="polite"></div>
+                    <div class="planning-admin-actions">
+                        <button id="planning-admin-save" class="planning-cta planning-cta-primary" type="submit">Creer la session</button>
+                        <button id="planning-admin-reset" class="planning-cta" type="button">Nouveau</button>
+                    </div>
+                </form>
+                <div id="planning-admin-list" class="planning-admin-list" aria-live="polite">
+                    <article class="planning-admin-empty">Aucune session candidate chargee.</article>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="planning-footer site-footer">
+            <div class="site-footer-left">
+                <p>&copy; <span id="planning-year"></span> Carte Hesta. Tous droits reserves.</p>
+                <p class="site-footer-version">Version <span id="planning-version-footer">0.17.49</span></p>
+                <p class="site-footer-note">Projet narratif / JDR - fan project / page planning officielle.</p>
+            </div>
+            <nav class="site-footer-links" aria-label="Liens secondaires">
+                <a href="/">Accueil</a>
+                <a href="/map/">Carte</a>
+                <a href="/timeline/">Chronologie</a>
+                <a href="/planning/">Planning</a>
+                <a href="/changelog/">Changelog</a>
+                <a href="/docs/ASSETS-CREDITS.md">Credits assets</a>
+            </nav>
+        </footer>
+    </div>
+
+    <script type="module" src="/js/planning.js"></script>
+</body>
+</html>

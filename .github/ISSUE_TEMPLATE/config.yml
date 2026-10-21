@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Signalement privé de sécurité
+    url: https://github.com/Daneisra/Carte-Hesta/security/advisories/new
+    about: Ne publiez pas de vulnérabilité, secret ou donnée personnelle dans une Issue.
+  - name: Communauté Hesta
+    url: https://hesta.dannytech.fr/
+    about: Discussions communautaires sur le Portail Hesta.

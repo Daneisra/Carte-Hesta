@@ -1,0 +1,16 @@
+# Normaliser les fins de ligne
+* text=auto eol=lf
+
+# Traiter ces fichiers comme texte (diff corrects)
+.editorconfig text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+*.html text eol=lf
+*.css  text eol=lf
+*.js   text eol=lf
+*.mjs  text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.py   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf

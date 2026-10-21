@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte Hesta | Changelog</title>
+    <meta name="description" content="Historique des versions et changements de la Carte Interactive Hesta." />
+    <meta property="og:title" content="Carte Hesta | Changelog" />
+    <meta property="og:description" content="Consultez les versions, corrections et ameliorations livrees sur la carte narrative Hesta." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://cartehesta.dannytech.fr/changelog/" />
+    <meta property="og:image" content="https://cartehesta.dannytech.fr/assets/logo.png" />
+    <link rel="stylesheet" href="/changelog.css">
+    <link rel="stylesheet" href="/assets/hesta-identity.css">
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+</head>
+<body>
+    <a class="changelog-skip-link" href="#changelog-main">Aller au contenu principal</a>
+    <div class="changelog-shell">
+        <header class="changelog-header">
+            <div class="changelog-brand">
+                <a class="changelog-brand-mark" href="/" aria-label="Accueil Carte Hesta">
+                    <img src="/assets/logo.png" alt="" />
+                </a>
+                <span class="changelog-brand-text">
+                    <strong><a class="hesta-wordmark" href="https://hesta.dannytech.fr/">HESTA</a><span class="hesta-divider" aria-hidden="true">·</span>Carte Hesta</strong>
+                    <small>Historique des versions</small>
+                </span>
+            </div>
+            <nav class="changelog-nav" aria-label="Navigation principale">
+                <a href="/">Accueil</a>
+                <a href="https://pahesta.dannytech.fr/">Système PA</a>
+                <a href="/map/">Carte</a>
+                <a href="/timeline/">Chronologie</a>
+                <a href="/planning/">Planning</a>
+                <a href="/changelog/" aria-current="page">Changelog</a>
+            </nav>
+            <div class="changelog-header-actions">
+                <a class="changelog-link-button" href="/map/">Entrer sur la carte</a>
+            </div>
+        </header>
+
+        <main id="changelog-main" class="changelog-main">
+            <section class="changelog-hero" aria-labelledby="changelog-title">
+                <div>
+                    <p class="changelog-kicker">Versions & patch notes</p>
+                    <h1 id="changelog-title">Suivre les evolutions de la carte</h1>
+                    <p class="changelog-lead">
+                        Cette page regroupe les dernieres versions livrees, les correctifs visibles et les changements utiles pour les joueurs, MJ et contributeurs.
+                    </p>
+                </div>
+                <div class="changelog-hero-meta" aria-label="Resume changelog">
+                    <div class="changelog-stat">
+                        <span>Version actuelle</span>
+                        <strong id="changelog-version">0.17.49</strong>
+                    </div>
+                    <div class="changelog-stat">
+                        <span>Entrees</span>
+                        <strong id="changelog-count">--</strong>
+                    </div>
+                    <div class="changelog-stat">
+                        <span>Source</span>
+                        <strong id="changelog-source">--</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="changelog-panel" aria-labelledby="changelog-list-title">
+                <div class="changelog-panel-header">
+                    <div>
+                        <p class="changelog-panel-kicker">Historique</p>
+                        <h2 id="changelog-list-title">Derniers changements</h2>
+                    </div>
+                    <p id="changelog-status" class="changelog-status" role="status" aria-live="polite">Chargement du changelog...</p>
+                </div>
+                <ol id="changelog-list" class="changelog-list">
+                    <li class="changelog-empty">Chargement des versions...</li>
+                </ol>
+            </section>
+        </main>
+
+        <footer class="changelog-footer site-footer">
+            <div class="site-footer-left">
+                <p>&copy; <span id="changelog-year"></span> Carte Hesta. Tous droits reserves.</p>
+                <p class="site-footer-version">Version <span id="changelog-version-footer">0.17.49</span></p>
+                <p class="site-footer-note">Projet narratif / JDR - fan project / historique des versions.</p>
+            </div>
+            <nav class="site-footer-links" aria-label="Liens secondaires">
+                <a href="/">Accueil</a>
+                <a href="/map/">Carte</a>
+                <a href="/timeline/">Chronologie</a>
+                <a href="/planning/">Planning</a>
+                <a href="/changelog/">Changelog</a>
+                <a href="/docs/ASSETS-CREDITS.md">Credits assets</a>
+            </nav>
+        </footer>
+    </div>
+
+    <script type="module" src="/js/changelog.js"></script>
+</body>
+</html>

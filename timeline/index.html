@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte Hesta | Chronologie</title>
+    <meta name="description" content="Frise chronologique d Hesta : reperez les grandes ruptures, les lieux clefs et les evenements qui structurent les campagnes." />
+    <meta property="og:title" content="Carte Hesta | Chronologie" />
+    <meta property="og:description" content="Une frise horizontale pour parcourir les evenements majeurs et revenir vers la carte interactive." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://cartehesta.dannytech.fr/timeline/" />
+    <meta property="og:image" content="https://cartehesta.dannytech.fr/assets/logo.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Carte Hesta | Chronologie" />
+    <meta name="twitter:description" content="Reperez les grandes periodes d Hesta et ouvrez les lieux lies sur la carte." />
+    <link rel="stylesheet" href="/timeline.css">
+    <link rel="stylesheet" href="/assets/hesta-identity.css">
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+</head>
+<body>
+    <a class="timeline-skip-link" href="#timeline-main">Aller au contenu principal</a>
+    <div class="timeline-shell">
+        <header class="timeline-header">
+            <div class="timeline-brand">
+                <a class="timeline-brand-mark" href="/" aria-label="Accueil Carte Hesta">
+                    <img src="/assets/logo.png" alt="" />
+                </a>
+                <span class="timeline-brand-text">
+                    <strong><a class="hesta-wordmark" href="https://hesta.dannytech.fr/">HESTA</a><span class="hesta-divider" aria-hidden="true">·</span>Carte Hesta</strong>
+                    <small>Frise chronologique</small>
+                </span>
+            </div>
+            <nav class="timeline-nav" aria-label="Navigation principale">
+                <a href="/">Accueil</a>
+                <a href="https://pahesta.dannytech.fr/">Système PA</a>
+                <a href="/map/">Carte</a>
+                <a href="/timeline/" aria-current="page">Chronologie</a>
+                <a href="/planning/">Planning</a>
+                <a href="/changelog/">Changelog</a>
+            </nav>
+            <div class="timeline-header-actions">
+                <a class="timeline-link-button" href="/map/">Entrer sur la carte</a>
+            </div>
+        </header>
+
+        <main id="timeline-main" class="timeline-main">
+            <section class="timeline-hero" aria-labelledby="timeline-title">
+                <div class="timeline-hero-copy">
+                    <p class="timeline-kicker">P5 - Chronologie</p>
+                    <h1 id="timeline-title">Traversez l'histoire d'Hesta de gauche a droite</h1>
+                    <p id="timeline-subtitle" class="timeline-lead">
+                        Charge la chronologie...
+                    </p>
+                </div>
+                <div class="timeline-hero-meta" aria-label="Resume chronologie">
+                    <div class="timeline-stat">
+                        <span>Evenements</span>
+                        <strong id="timeline-count">--</strong>
+                    </div>
+                    <div class="timeline-stat">
+                        <span>Periodes</span>
+                        <strong id="timeline-periods">--</strong>
+                    </div>
+                    <div class="timeline-stat">
+                        <span>Plage</span>
+                        <strong id="timeline-range">--</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="timeline-stage" aria-labelledby="timeline-stage-title">
+                <div class="timeline-stage-header">
+                    <div>
+                        <p class="timeline-stage-kicker">Frise complete</p>
+                        <h2 id="timeline-stage-title">Chronologie horizontale</h2>
+                    </div>
+                    <div class="timeline-stage-actions">
+                        <button id="timeline-scroll-prev" class="timeline-scroll-button" type="button" aria-label="Defiler vers la gauche">←</button>
+                        <button id="timeline-scroll-next" class="timeline-scroll-button" type="button" aria-label="Defiler vers la droite">→</button>
+                    </div>
+                </div>
+                <p id="timeline-status" class="timeline-status" role="status" aria-live="polite">Chargement de la frise...</p>
+                <div id="timeline-track-shell" class="timeline-track-shell">
+                    <div id="timeline-track" class="timeline-track" role="list" aria-label="Evenements chronologiques"></div>
+                </div>
+            </section>
+
+            <section id="timeline-detail" class="timeline-detail" aria-labelledby="timeline-detail-title" hidden>
+                <div class="timeline-detail-topline">
+                    <span id="timeline-detail-year" class="timeline-detail-year">--</span>
+                    <span id="timeline-detail-period" class="timeline-detail-period">--</span>
+                </div>
+                <h2 id="timeline-detail-title">Selectionnez un evenement</h2>
+                <p id="timeline-detail-summary" class="timeline-detail-summary"></p>
+                <div id="timeline-detail-content" class="timeline-detail-content"></div>
+                <div id="timeline-detail-tags" class="timeline-detail-tags" aria-label="Tags"></div>
+                <div id="timeline-detail-locations" class="timeline-detail-locations" aria-label="Lieux lies"></div>
+                <div class="timeline-detail-actions">
+                    <a id="timeline-map-link" class="timeline-link-button timeline-link-button-primary" href="/map/">Voir sur la carte</a>
+                    <a class="timeline-link-button timeline-link-button-secondary" href="/">Retour accueil</a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="timeline-image-lightbox" class="timeline-image-lightbox" role="dialog" aria-modal="true" aria-labelledby="timeline-image-lightbox-title" hidden>
+        <button id="timeline-image-lightbox-backdrop" class="timeline-image-lightbox-backdrop" type="button" aria-label="Fermer l'image agrandie"></button>
+        <div class="timeline-image-lightbox-panel">
+            <button id="timeline-image-lightbox-close" class="timeline-image-lightbox-close" type="button" aria-label="Fermer l'image agrandie">×</button>
+            <p id="timeline-image-lightbox-title" class="timeline-image-lightbox-title">Image de chronologie</p>
+            <img id="timeline-image-lightbox-img" class="timeline-image-lightbox-img" src="" alt="" />
+            <p id="timeline-image-lightbox-caption" class="timeline-image-lightbox-caption"></p>
+        </div>
+    </div>
+
+    <script type="module" src="/js/timeline.js"></script>
+</body>
+</html>

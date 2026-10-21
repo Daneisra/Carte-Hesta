@@ -1,0 +1,29 @@
+name: Signaler un bug
+description: Décrire une anomalie reproductible de Carte Hesta, sans donnée privée.
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Ne publiez aucun secret, cookie, identifiant Discord, export JSON, profil ou capture privée. Pour une faille de sécurité, utilisez le signalement privé dans Security, jamais une Issue publique."
+  - type: textarea
+    id: steps
+    attributes:
+      label: Étapes pour reproduire
+      description: Utilisez des exemples fictifs et une URL sans jeton.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Résultat attendu et résultat observé
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Navigateur et système
+  - type: input
+    id: version
+    attributes:
+      label: Version ou date du constat

@@ -1,0 +1,127 @@
+{
+  "Vruliwen": [
+    {
+      "name": "Nikaïus",
+      "type": "Large City Stone Wall + Towers",
+      "x": 7363,
+      "y": 3607,
+      "description": "Ville portuaire cible de raid viking",
+      "images": [],
+      "videos": [
+        {
+          "url": "https://youtu.be/vel1NuL8DZc",
+          "title": "One-Shot - La Défense de Nikaïus Part.1"
+        },
+        {
+          "url": "https://youtu.be/_kdPNiUopa4",
+          "title": "One-Shot - La Défense de Nikaïus Part.2"
+        }
+      ],
+      "audio": "",
+      "history": "",
+      "quests": [],
+      "pnjs": [],
+      "lore": [],
+      "tags": [
+        "port",
+        "defense"
+      ]
+    },
+    {
+      "name": "Valerius Primus",
+      "type": "Large City Stone Wall + Towers",
+      "x": 7676,
+      "y": 3513,
+      "description": "Capital de Vruliwen",
+      "images": [],
+      "videos": [],
+      "audio": "assets/audio/valerius_ambiance.mp3",
+      "history": "",
+      "quests": [],
+      "pnjs": [],
+      "lore": [],
+      "tags": [
+        "capital",
+        "politique"
+      ]
+    }
+  ],
+  "Dipovia": [
+    {
+      "name": "Lieu de Dipovia",
+      "x": 3579,
+      "y": 5243,
+      "type": "Crater",
+      "description": "Description du lieu de Dipovia",
+      "images": []
+    }
+  ],
+  "Archipel Trekrerith": [
+    {
+      "name": "Brisant",
+      "x": 4515,
+      "y": 3280,
+      "type": "Village",
+      "description": "Description du lieu de Archipel Trekrerith",
+      "images": [],
+      "videos": [],
+      "audio": "assets/audio/brisant_ambiance.mp3"
+    },
+    {
+      "name": "Kitha",
+      "x": 6087,
+      "y": 2653,
+      "type": "Town",
+      "description": "Description du lieu de Archipel Trekrerith",
+      "images": []
+    }
+  ],
+  "Doprouria": [
+    {
+      "name": "Irisk",
+      "x": 3991,
+      "y": 1037,
+      "type": "Large City Stone Wall + Towers",
+      "description": "Description du lieu de Doprouria",
+      "images": [],
+      "videos": [],
+      "audio": "assets/audio/irisk_ambiance.mp3"
+    },
+    {
+      "name": "Lisboa",
+      "x": 3754,
+      "y": 440,
+      "type": "Large City Stone Wall + Towers",
+      "description": "Description du lieu de Doprouria",
+      "images": []
+    }
+  ],
+  "Zemantis": [
+    {
+      "name": "Vyktyskar",
+      "x": 1837,
+      "y": 1211,
+      "type": "Castle",
+      "description": "Description du lieu de Zemantis",
+      "images": []
+    }
+  ],
+  "🌊 Mers et Océans 🌊": [
+    {
+      "name": "Les Eaux Obscures",
+      "x": 3336,
+      "y": 2872,
+      "type": "continent",
+      "description": "",
+      "images": []
+    },
+    {
+      "name": "La Mer d'Ivoire",
+      "x": 6112,
+      "y": 4168,
+      "type": "continent",
+      "description": "",
+      "images": []
+    }
+  ]
+}
