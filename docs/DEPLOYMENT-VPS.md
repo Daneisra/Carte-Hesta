@@ -4,11 +4,11 @@
 
 Le service dédié est pm2-cartehesta.service. Il utilise son propre PM2_HOME et Node 22, sans toucher au daemon PM2 des autres applications. Les secrets, données, sessions, médias et journaux restent hors app/public ; voir [Architecture](ARCHITECTURE.md).
 
-## Chaîne préparée, non activée
+## Chaîne CI et déploiement manuel
 
 CI s'exécute sur push main et pull_request, avec fixtures synthétiques et sans secret de production. Elle valide Linux, les deux navigateurs et le gate strict, puis produit un artefact identifié par le commit et un manifeste SHA-256.
 
-Le nouveau workflow Deploy n'a qu'un déclencheur manuel. Son verrou if:false et sa désactivation administrative sont conservés. Il sélectionne un run complet CI sur push main, dans ce dépôt et sur la révision exacte ; une validation API seule ou un run de PR ne convient pas. L'artefact existant est téléchargé et vérifié, jamais reconstruit comme substitut à celui testé.
+Le nouveau workflow Deploy n'a qu'un déclencheur manuel. Ses jobs exigent le dépôt officiel et main ; le transport exige l’approbation de l’environnement de production. Un push ne déclenche jamais Deploy. Il sélectionne un run complet CI sur push main, dans ce dépôt et sur la révision exacte ; une validation API seule ou un run de PR ne convient pas. L'artefact existant est téléchargé et vérifié, jamais reconstruit comme substitut à celui testé.
 
 Le contrôleur proposé ops/deploy-code.py prépare une copie privée, vérifie le manifeste avec un vérificateur root figé hors de app/public, ferme la gate publique, arrête uniquement le service dédié et remplace ensemble app/public. Il conserve le code précédent et les échecs. Un échec d'activation ou de santé entraîne un rollback du code et maintient HTTP 503 ; aucune donnée n'est restaurée automatiquement.
 

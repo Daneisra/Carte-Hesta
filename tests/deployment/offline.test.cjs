@@ -232,10 +232,10 @@ test('path-only Git gate refuses newly tracked private paths and keeps legacy de
     assert.equal(classify(['.aws/credentials', '.ssh/config', '.npmrc', 'users.json', 'server/private/permissions.json']).forbidden.length, 5);
 });
 
-test('workflow, PM2 and Nginx proposals retain hard deployment stop, one writer and conditional media routing', () => {
+test('manual workflow, PM2 and Nginx retain explicit authorization, one writer and conditional media routing', () => {
     const read = n => fs.readFileSync(path.join(SOURCE_ROOT, n), 'utf8');
     const ci = read('.github/workflows/ci.yml'), deploy = read('.github/workflows/deploy.yml'), nginx = read('ops/nginx-routing.conf');
-    assert(deploy.includes('if: ${{ false }}')); assert(!/^  (?:push|workflow_run):/m.test(deploy)); assert(!/uses: (?:appleboy|burnett01)|pm2 (?:start|reload|restart)/.test(deploy)); assert(!/secrets\./.test(ci));
+    assert(!deploy.includes('if: ${{ false }}')); assert(deploy.includes("github.event_name == 'workflow_dispatch'")); assert(deploy.includes("github.ref == 'refs/heads/main'")); assert(!/^  (?:push|workflow_run):/m.test(deploy)); assert(!/uses: (?:appleboy|burnett01)|pm2 (?:start|reload|restart)/.test(deploy)); assert(!/secrets\./.test(ci));
     assert(!/continue-on-error|validate_assets\.py|node-version: 18|npm i --omit|\|\| npm/.test(ci + deploy)); assert(ci.includes('--project=firefox')); assert(ci.includes('--storage')); assert(ci.includes('--publication'));
     for (const file of [ci, deploy]) for (const match of file.matchAll(/uses: ([^\s]+)@([^\s]+)/g)) assert(/^[a-f0-9]{40}$/.test(match[2]));
     assert(nginx.includes('root /srv/cartehesta/public;')); assert(!/\balias\b|\btry_files\b/.test(nginx)); assert(nginx.includes('proxy_pass http://127.0.0.1:4173;')); assert(nginx.includes('proxy_buffering off')); assert(nginx.includes('OPEN_APPROVED'));
@@ -250,7 +250,8 @@ test('both workflow documents parse strictly and their jobs keep the intended se
         assert.deepEqual(doc.errors, []); return doc.toJS();
     };
     const ci = parse('ci.yml'), deploy = parse('deploy.yml');
-    assert.equal(deploy.jobs['activate-reviewed'].if, '${{ false }}');
+    const manualMainGuard = "${{ github.event_name == 'workflow_dispatch' && github.repository == 'Daneisra/Carte-Hesta' && github.ref == 'refs/heads/main' }}";
+    assert.equal(deploy.jobs['activate-reviewed'].if, manualMainGuard);
     assert.equal(deploy.jobs['activate-reviewed'].environment, 'cartehesta-production');
     assert.equal(deploy.on.workflow_dispatch.inputs.reopen.default, false);
     assert(!JSON.stringify(deploy.jobs['prepare-only']).includes('secrets.'));
@@ -258,7 +259,7 @@ test('both workflow documents parse strictly and their jobs keep the intended se
     assert.equal(secretStep.env.DEPLOY_SSH_KEY, '${{ secrets.CARTE_DEPLOY_SSH_KEY }}');
     assert(!JSON.stringify(deploy).includes('SESSION_SECRET'));
     assert(!JSON.stringify(deploy).includes('DISCORD_CLIENT_SECRET'));
-    assert.deepEqual(Object.keys(deploy.on), ['workflow_dispatch']); assert.equal(deploy.jobs['prepare-only'].if, '${{ false }}');
+    assert.deepEqual(Object.keys(deploy.on), ['workflow_dispatch']); assert.equal(deploy.jobs['prepare-only'].if, manualMainGuard);
     assert.equal(ci.jobs['isolated-validation']['runs-on'], 'ubuntu-24.04');
     assert.equal(ci.permissions.contents, 'read'); assert.equal(deploy.permissions.contents, 'read');
     const steps = ci.jobs['isolated-validation'].steps;

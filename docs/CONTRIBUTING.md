@@ -31,6 +31,6 @@ Le build de production passe par tools/deployment.js package avec trois argument
 
 ## Cycle normal
 
-Changement ciblé, tests pertinents, revue du diff indexé, commit puis push vers main déclenchent CI. Un candidat n'est déployable qu'après validation Linux complète sur cette même révision. Deploy reste désactivé jusqu'à autorisation et configuration séparées. Les bugs et propositions utilisent les Issues de Carte-Hesta ; la communauté reste sur le Portail.
+Changement ciblé, tests pertinents, revue du diff indexé, commit puis push vers main déclenchent CI. Un candidat n'est déployable qu'après validation Linux complète sur cette même révision. Deploy est exclusivement manuel et soumis à une autorisation d’exploitation ainsi qu’à l’approbation de l’environnement protégé. Les bugs et propositions utilisent les Issues de Carte-Hesta ; la communauté reste sur le Portail.
 
 Les JSON de production, sessions et médias ne sont jamais des sources ni des fixtures. Ne pas récupérer ces fichiers dans Git, y compris pour changer une version. Les archives historiques et les sauvegardes sont conservées sans modification.

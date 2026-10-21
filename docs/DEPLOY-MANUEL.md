@@ -1,6 +1,6 @@
 # Deploy manuel contrôlé
 
-Le workflow est préparé et testé, mais reste administrativement désactivé avec deux if:false. Aucun push ni changement de visibilité ne l'active. CI reste automatique sur push et PR, avec uniquement des données synthétiques.
+Le workflow Deploy est exclusivement manuel : workflow_dispatch sur main, confirmation explicite et environnement de production protégé. Un push ne déclenche que CI, avec uniquement des données synthétiques. Chaque déploiement réel nécessite une autorisation d'exploitation.
 
 ## Paramètres GitHub exacts
 
@@ -42,7 +42,7 @@ Ces opérations et la génération de la clé réelle ne sont pas effectuées pe
 
 ## Premier essai et limites
 
-Après autorisation VPS, installer les accès dédiés et tester la commande forcée avec des données fictives avant activation du workflow. Le premier déploiement reste manuel, avec reopen=false. Réutiliser la recette privée existante pour Discord, médias privés, Range, publications et permissions ; aucun cookie ou identifiant de média privé ne va dans les logs Actions. Une nouvelle autorisation permettra la réouverture et le retrait des deux verrous de workflow. Aucun déclencheur push/workflow_run de déploiement n'est ajouté.
+Après autorisation VPS, installer les accès dédiés et tester la commande forcée avec des données fictives avant activation du workflow. Le premier déploiement reste manuel, avec reopen=false. Réutiliser la recette privée existante pour Discord, médias privés, Range, publications et permissions ; aucun cookie ou identifiant de média privé ne va dans les logs Actions. Après recette privée réussie, une autorisation explicite permet la réouverture contrôlée. Aucun déclencheur push/workflow_run de déploiement n'est ajouté.
 
 Le rollback ne restaure jamais un store, une session, un média, un secret ou une ancienne configuration par-dessus l'état courant. Un verrou métier ou une erreur de transaction demande un diagnostic explicite, pas un déverrouillage automatique.
 

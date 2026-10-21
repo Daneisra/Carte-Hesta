@@ -1,4 +1,4 @@
-name: Deploy reviewed candidate (disabled)
+name: Deploy reviewed candidate
 on:
   workflow_dispatch:
     inputs:
@@ -29,7 +29,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   prepare-only:
-    if: ${{ false }} # Authorization required before removing this hard stop; GitHub workflow also stays disabled.
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'Daneisra/Carte-Hesta' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -88,9 +88,9 @@ jobs:
           retention-days: 3
   # Transport is deliberately not provisioned by a source push. The server-side
   # restricted account/controller contract and activation checklist are in
-  # docs/DEPLOY-MANUEL.md. Keep both stops until that separate authorization.
+  # docs/DEPLOY-MANUEL.md. Each run remains manual, main-only and environment-reviewed.
   activate-reviewed:
-    if: ${{ false }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'Daneisra/Carte-Hesta' && github.ref == 'refs/heads/main' }}
     needs: prepare-only
     runs-on: ubuntu-24.04
     timeout-minutes: 15

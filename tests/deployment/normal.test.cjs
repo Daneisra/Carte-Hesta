@@ -21,6 +21,7 @@ function sample() {
 test('manual deployment accepts only the exact full Linux push/main candidate', () => assert.equal(validate(sample(), REV, REV).id, 3));
 for (const [name, mutate] of [
     ['pull request', s => s.run.event = 'pull_request'],
+    ['manually dispatched CI', s => s.run.event = 'workflow_dispatch'],
     ['API diagnostics', s => s.jobs.jobs[0].name = 'API diagnostics only'],
     ['skipped Firefox', s => s.jobs.jobs[0].steps[4].conclusion = 'skipped'],
     ['other repository', s => s.run.head_repository.full_name = 'attacker/Carte-Hesta'],

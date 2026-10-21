@@ -21,7 +21,7 @@ Utiliser Node 22 et le lockfile. Les tests génèrent exclusivement des données
     node tools/runIsolatedTests.js --unit
     node tools/runIsolatedTests.js --project=api
 
-Voir [Contribution](docs/CONTRIBUTING.md) pour toutes les suites, dont Chromium et Firefox sous Linux. La CI est automatique sur push et pull request ; le déploiement reste manuel et désactivé jusqu'à configuration et autorisation séparées.
+Voir [Contribution](docs/CONTRIBUTING.md) pour toutes les suites, dont Chromium et Firefox sous Linux. La CI est automatique sur push et pull request ; le déploiement reste exclusivement manuel, avec autorisation et approbation de l’environnement de production.
 
 ## Documentation
 

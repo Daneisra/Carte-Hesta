@@ -4,4 +4,4 @@ Utiliser le [signalement privé GitHub](https://github.com/Daneisra/Carte-Hesta/
 
 Pour les bugs ordinaires et les propositions : [Issues](https://github.com/Daneisra/Carte-Hesta/issues/new/choose). Pour la communauté : [Portail Hesta](https://hesta.dannytech.fr/).
 
-Les données et médias de production ne font pas partie du dépôt. Le déploiement reste manuel, désactivé jusqu'à autorisation et configuration des accès dédiés.
+Les données et médias de production ne font pas partie du dépôt. Le déploiement reste exclusivement manuel, avec accès SSH dédié et approbation de l’environnement protégé.
