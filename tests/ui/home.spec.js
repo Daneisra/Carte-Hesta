@@ -5,7 +5,11 @@ test.describe('Accueil - Portail Hesta', () => {
     const calls = []; page.on('request', r => calls.push(r.url()));
     await page.goto('/');
     await expect(page.locator('body')).toHaveClass(/home-ready/);
-    await expect(page.locator('#home-community-portal-link')).toHaveAttribute('href', 'https://hesta.dannytech.fr/');
+    const communityLink = page.locator('.home-nav a[href="https://hesta.dannytech.fr/#communaute"]');
+    await expect(communityLink).toHaveText('Communaute');
+    await expect(communityLink).not.toHaveAttribute('target');
+    await expect(page.locator('#home-community, .home-support-panel')).toHaveCount(0);
+    await expect(page.locator('a[href*="paypal.me"], a[href*="ko-fi.com"], a[href*="app.roll20.net/wishlist"]')).toHaveCount(0);
     await expect(page.locator('#home-footer-support')).toHaveAttribute('href', 'https://github.com/Daneisra/Carte-Hesta/issues/new/choose');
     await expect(page.locator('a[href*="github.com/Daneisra/"]')).toHaveCount(1);
     await expect(page.locator('a[href*="Carte-Interactive"]')).toHaveCount(0);
@@ -22,24 +26,28 @@ test.describe('Accueil - Portail Hesta', () => {
   });
 });
 
-for (const width of [390, 1280]) {
-  test('le bouton communautaire ne chevauche pas le texte à ' + width + 'px', async ({ page }) => {
+for (const width of [320, 390, 768, 1280]) {
+  test('Accueil - navigation communautaire et cartes lisibles a ' + width + 'px', async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
     await expect(page.locator('body')).toHaveClass(/home-ready/);
-    // Capture in one rendering task: the card's entry animation moves all three.
-    const { text, button, support } = await page.locator('#home-community').evaluate(card => {
-      const box = selector => {
-        const r = card.querySelector(selector).getBoundingClientRect();
-        return { x: r.x, y: r.y, width: r.width, height: r.height };
-      };
-      return { text: box(':scope > .home-muted'), button: box('#home-community-portal-link'), support: box('.home-support-panel') };
-    });
-    expect(text).toBeTruthy(); expect(button).toBeTruthy(); expect(support).toBeTruthy();
-    expect(button.y).toBeGreaterThanOrEqual(text.y + text.height + 10);
-    expect(support.y).toBeGreaterThanOrEqual(button.y + button.height);
-    expect(button.x).toBeGreaterThanOrEqual(0);
-    expect(button.x + button.width).toBeLessThanOrEqual(width);
+    const communityLink = page.locator('.home-nav a[href="https://hesta.dannytech.fr/#communaute"]');
+    await expect(communityLink).toBeVisible();
+    await expect(page.locator('.home-grid-topics > article:visible')).toHaveCount(2);
+    const layout = await page.locator('.home-grid-topics').evaluate(grid => ({
+      overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2,
+      columns: getComputedStyle(grid).gridTemplateColumns.split(' ').length,
+      cards: Array.from(grid.children).filter(card => !card.hidden).map(card => {
+        const { x, width: cardWidth } = card.getBoundingClientRect();
+        return { x, width: cardWidth };
+      })
+    }));
+    expect(layout.overflow).toBe(false);
+    expect(layout.columns).toBe(width === 1280 ? 2 : 1);
+    for (const card of layout.cards) {
+      expect(card.x).toBeGreaterThanOrEqual(0);
+      expect(card.x + card.width).toBeLessThanOrEqual(width);
+    }
   });
 }
 
@@ -88,7 +96,7 @@ test.describe('Accueil - mobile', () => {
     await expect(page.locator('.home-nav a[href="/planning/"]')).toHaveText('Planning');
     await expect(page.locator('.home-nav a[href="https://pahesta.dannytech.fr/"]')).toHaveText('Système PA');
     await expect(page.locator('#home-enter-map')).toBeVisible();
-    await expect(page.locator('#home-support-title')).toBeVisible();
+    await expect(page.locator('#home-community, #home-support-title')).toHaveCount(0);
 
     const hasHorizontalOverflow = await page.evaluate(() => (
       document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
@@ -101,11 +109,6 @@ test.describe('Accueil - mobile', () => {
     expect(headerBox).toBeTruthy();
     expect(navBox.width).toBeLessThanOrEqual(headerBox.width);
 
-    const roll20Links = page.locator('.home-support-roll20-list .home-link-button');
-    await expect(roll20Links.first()).toBeVisible();
-    const firstWishlistBox = await roll20Links.first().boundingBox();
-    expect(firstWishlistBox).toBeTruthy();
-    expect(firstWishlistBox.width).toBeGreaterThan(280);
-    expect(firstWishlistBox.width).toBeLessThanOrEqual(366);
+    await expect(page.locator('.home-nav a[href="https://hesta.dannytech.fr/#communaute"]')).toBeVisible();
   });
 });
