@@ -14,7 +14,7 @@ Pour fermer le site, déplacer la gate publique dans un nouveau nom conservé au
 
 ## Après redémarrage du VPS
 
-/run est éphémère : sans autorisation persistante vérifiée, le retour à HTTP 503 reste le comportement sûr. La restauration après un arrêt normal est préparée dans [REDEMARRAGE.md](REDEMARRAGE.md) : une autorisation à usage unique, des contrôles HTTPS privés et une unité dédiée. Son installation VPS nécessite une autorisation distincte ; aucun touch OPEN_APPROVED inconditionnel n'est ajouté.
+/run est éphémère : sans autorisation persistante vérifiée, le retour à HTTP 503 reste le comportement sûr. La restauration après un arrêt normal est installée et décrite dans [REDEMARRAGE.md](REDEMARRAGE.md) : une autorisation à usage unique, des contrôles HTTPS privés et une unité dédiée. Son premier démarrage a conservé le HTTPS 200 ; son comportement lors d'un véritable redémarrage reste à observer. Toute réinstallation nécessite une autorisation distincte ; aucun touch OPEN_APPROVED inconditionnel n'est ajouté.
 
 Maintenance volontaire, incident ou état incertain : conserver le 503. Après réparation, une recette et une réouverture explicitement autorisées sont nécessaires ; la simple reprise de santé ne suffit pas.
 

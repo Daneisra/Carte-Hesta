@@ -28,7 +28,7 @@ Installer après revue des empreintes :
 
 Vérifier les chemins root, app/public non modifiables par le compte applicatif, Node 22 dédié et pm2-cartehesta.service avant installation. Installer aussi une copie revue du vérificateur et de ses dépendances de code dans /usr/local/lib/cartehesta-release-verifier, root:root, non modifiable par les comptes applicatif et de transport. Cette copie est figée hors de app/public et ne peut jamais être mise à jour par Deploy. Un changement de politique de release nécessite une mise à jour opérateur distincte. Aucun code du candidat n'est exécuté comme root. Le backend reste exécuté sous son compte applicatif.
 
-Ces opérations et la génération de la clé réelle ne sont pas effectuées pendant la préparation locale. Ne jamais utiliser ssh-keyscan seul comme preuve d'identité d'hôte. Ne rien copier depuis les secrets applicatifs vers GitHub.
+Le transport dédié est installé et son premier essai GitHub Actions a réussi. Les commandes de cette section documentent le provisionnement, à ne pas répéter sans nécessité et autorisation. Ne jamais utiliser ssh-keyscan seul comme preuve d'identité d'hôte. Ne rien copier depuis les secrets applicatifs vers GitHub.
 
 ## Déroulement du workflow
 
@@ -46,6 +46,6 @@ Après autorisation VPS, installer les accès dédiés et tester la commande for
 
 Le rollback ne restaure jamais un store, une session, un média, un secret ou une ancienne configuration par-dessus l'état courant. Un verrou métier ou une erreur de transaction demande un diagnostic explicite, pas un déverrouillage automatique.
 
-Après redémarrage du VPS, /run reste éphémère et l'absence de gate maintient HTTP 503. La restauration vérifiée après arrêt normal est préparée dans [REDEMARRAGE.md](REDEMARRAGE.md), avec installation opérateur distincte des deux fichiers root. Deploy reste manuel et ne les installe jamais implicitement.
+Après redémarrage du VPS, /run reste éphémère et l'absence de gate maintient HTTP 503. La restauration vérifiée après arrêt normal est installée et décrite dans [REDEMARRAGE.md](REDEMARRAGE.md), avec installation opérateur distincte des deux fichiers root. Deploy reste manuel et ne les installe jamais implicitement.
 
 Références : [environnements et protection GitHub](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments).

@@ -2,6 +2,14 @@
 
 Carte interactive et outils narratifs pour l'univers d'Hesta : exploration des lieux, chronologie, planning JDR et administration des contenus.
 
+## État de production
+
+Le site [Carte Hesta](https://cartehesta.dannytech.fr/) est en production. Le dépôt officiel public est [Daneisra/Carte-Hesta](https://github.com/Daneisra/Carte-Hesta) ; l'historique antérieur est conservé séparément dans des archives privées, sans réimport dans ce dépôt.
+
+La CI est automatique ; Deploy reste manuel, limité à main et soumis à approbation. Le mécanisme systemd de redémarrage est installé et actif : son premier lancement a conservé le site ouvert. Son comportement lors d'un véritable redémarrage reste à observer. Voir [Redémarrage](docs/REDEMARRAGE.md).
+
+La communauté, Discord et le support général relèvent du Portail Hesta. Les anomalies de Carte Hesta utilisent ses propres Issues. L'intégration avec le référentiel Hesta Codex reste à développer.
+
 ## Fonctionnalités
 
 - Carte avec recherche, filtres, favoris, fiches des lieux et médias.

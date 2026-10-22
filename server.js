@@ -96,7 +96,7 @@ const DEFAULT_SITE_CONFIG = {
     }
   },
   support: {
-    issuesUrl: 'https://github.com/Daneisra/Carte-Interactive/issues',
+    issuesUrl: 'https://github.com/Daneisra/Carte-Hesta/issues/new/choose',
     contactEmail: 'contact@cartehesta.local'
   },
   legal: {
