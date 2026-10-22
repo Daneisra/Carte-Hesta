@@ -24,7 +24,7 @@ def command(value):
     if len(args) == 5 and args[0] == 'deploy' and re.fullmatch('[a-f0-9]{40}', args[1]) and all(
             re.fullmatch('[a-f0-9]{64}', x) for x in args[2:4]) and args[4] in ('closed', 'reopen'):
         return args
-    if len(args) == 3 and args[0] == 'rollback' and re.fullmatch('[a-f0-9]{40}', args[1]) and re.fullmatch('deployment-[a-z0-9_]{8}', args[2]):
+    if len(args) == 3 and args[0] in ('rollback', 'maintenance') and re.fullmatch('[a-f0-9]{40}', args[1]) and re.fullmatch('deployment-[a-z0-9_]{8}', args[2]):
         return args
     raise ValueError('E_SSH_COMMAND')
 
@@ -89,8 +89,8 @@ def receive(stream, directory, digest):
 
 def main():
     args = command(os.environ.get('SSH_ORIGINAL_COMMAND', ''))
-    if args[0] == 'rollback':
-        result = subprocess.run(['/usr/bin/sudo', '-n', CONTROLLER, '--rollback', args[1], args[2]],
+    if args[0] in ('rollback', 'maintenance'):
+        result = subprocess.run(['/usr/bin/sudo', '-n', CONTROLLER, '--' + args[0], args[1], args[2]],
                                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=240)
     else:
         if INCOMING.is_symlink() or not INCOMING.is_dir() or stat.S_IMODE(INCOMING.stat().st_mode) != 0o700:
@@ -103,7 +103,7 @@ def main():
         result = subprocess.run(invocation, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=660)
     value = json.loads(result.stdout)
     # Do not relay arbitrary stdout/stderr from a failed process.
-    if value.get('revision') != args[1] or value.get('status') not in ('Activated', 'RolledBackMaintenance'):
+    if value.get('revision') != args[1] or value.get('status') not in ('Activated', 'RolledBackMaintenance', 'RolledBackHealthy', 'StoppedMaintenance'):
         raise ValueError('E_CONTROLLER_RECEIPT')
     print(json.dumps(value))
 

@@ -2,7 +2,7 @@
 """Prepared host controller. Never install/run on production without separate approval.
 
 Only app/public are replaced. Nginx, data, media, secrets, PM2 configuration and
-other services are not edited. A failed activation leaves public maintenance on.
+other services are not edited. Only a verified healthy version may reopen.
 """
 import argparse
 import hashlib
@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import re
+import runpy
 import shutil
 import signal
 import stat
@@ -64,6 +65,23 @@ class Deployment:
         self.service, self.health, self.verify = service, health, verify
         self.payload_layout = payload_layout
 
+    def restore_public(self, run, approved):
+        if not approved:
+            return False
+        gate = self.gates / 'OPEN_APPROVED'
+        saved = [self.gates / (run.name + '.OPEN_APPROVED.' + suffix)
+                 for suffix in ('held', 'external-failed', 'failed')]
+        saved = [p for p in saved if os.path.lexists(p)]
+        if os.path.lexists(gate) or len(saved) != 1:
+            raise ValueError('E_PUBLIC_AUTHORIZATION_STATE')
+        s = saved[0].lstat()
+        if not stat.S_ISREG(s.st_mode) or saved[0].is_symlink() or s.st_nlink != 1 or s.st_size:
+            raise ValueError('E_PUBLIC_AUTHORIZATION_FILE')
+        if os.name == 'posix' and (s.st_uid != os.geteuid() or s.st_mode & 0o022):
+            raise ValueError('E_PUBLIC_AUTHORIZATION_OWNER')
+        saved[0].rename(gate)
+        return True
+
     def execute(self, revision, checksum, reopen=False, ticket=None):
         if not re.fullmatch('[a-f0-9]{40}', revision) or not re.fullmatch('[a-f0-9]{64}', checksum):
             raise ValueError('E_REVISION_OR_CHECKSUM')
@@ -98,6 +116,7 @@ class Deployment:
         for n in ('app', 'public'):
             for p in (stage / n, *(stage / n).rglob('*')):
                 p.chmod(0o755 if p.is_dir() else 0o644)
+        expected = {n: tree(stage / n) for n in ('app', 'public')}
         previous = run / 'previous'
         previous.mkdir(mode=0o700)
         held = self.gates / (run.name + '.OPEN_APPROVED.held')
@@ -119,17 +138,21 @@ class Deployment:
                 installed.append(n)
             self.service('start')
             self.health()
+            if {n: tree(self.base / n) for n in ('app', 'public')} != expected:
+                raise ValueError('E_ACTIVE_MANIFEST_CHANGED')
             if {n: tree(previous / n) for n in moved} != before:
                 raise ValueError('E_ROLLBACK_CODE_CHANGED')
             (run / 'active.private.json').write_text(json.dumps({n: tree(self.base / n) for n in ('app', 'public')}) + '\n')
-            outcome = {'status': 'Activated', 'revision': revision, 'receipt': run.name, 'publicReopened': bool(had_gate and reopen)}
+            outcome = {'status': 'Activated', 'revision': revision, 'manifestSha256': checksum,
+                       'receipt': run.name, 'publicReopened': False, 'reopenOnRollback': bool(had_gate and reopen)}
             (run / 'result.private.json').write_text(json.dumps(outcome) + '\n')
             # External verification is still required by the caller. Reopen only
             # on explicit approval, and never turn a previously closed site on.
             if had_gate and reopen:
                 if os.path.lexists(gate):
                     raise ValueError('E_CONCURRENT_GATE')
-                held.rename(gate)
+                outcome['publicReopened'] = self.restore_public(run, True)
+                (run / 'result.private.json').write_text(json.dumps(outcome) + '\n')
         except Exception as failure:
             # First preserve fail-closed public routing. Rollback code only, never data.
             if gate.exists():
@@ -149,11 +172,20 @@ class Deployment:
                 if stopped:
                     self.service('start')
                     self.health()
+                    if {n: tree(self.base / n) for n in ('app', 'public')} != before:
+                        raise ValueError('E_ROLLBACK_CHANGED_DURING_HEALTH')
+                    self.restore_public(run, had_gate and reopen)
             except Exception as rollback:
                 rollback_error = type(rollback).__name__
-            outcome = {'status': 'StoppedMaintenance', 'exceptionType': type(failure).__name__,
-                       'rollbackVerified': stopped and rollback_error is None, 'rollbackExceptionType': rollback_error}
+            healthy = stopped and rollback_error is None
+            outcome = {'status': 'RolledBackHealthy' if healthy else 'StoppedMaintenance',
+                       'revision': revision, 'manifestSha256': checksum, 'receipt': run.name,
+                       'publicReopened': bool(healthy and had_gate and reopen),
+                       'exceptionType': type(failure).__name__,
+                       'rollbackVerified': healthy, 'rollbackExceptionType': rollback_error}
             (run / 'result.private.json').write_text(json.dumps(outcome) + '\n')
+            if healthy:
+                return outcome
             raise RuntimeError('E_DEPLOYMENT_STOPPED_MAINTENANCE') from None
         return outcome
 
@@ -188,12 +220,34 @@ class Deployment:
                 raise ValueError('E_ROLLBACK_INTEGRITY')
             self.service('start')
             self.health()
-            outcome = {'status': 'RolledBackMaintenance', 'revision': revision, 'receipt': receipt, 'publicReopened': False}
+            if {n: tree(self.base / n) for n in ('app', 'public')} != before:
+                raise ValueError('E_ROLLBACK_CHANGED_DURING_HEALTH')
+            reopened = self.restore_public(run, value.get('reopenOnRollback') is True)
+            outcome = {'status': 'RolledBackHealthy', 'revision': revision, 'receipt': receipt, 'publicReopened': reopened}
         except Exception as error:
             (run / 'rollback.private.json').write_text(json.dumps({'status': 'StoppedMaintenance', 'exceptionType': type(error).__name__}) + '\n')
             raise RuntimeError('E_ROLLBACK_STOPPED_MAINTENANCE') from None
         (run / 'rollback.private.json').write_text(json.dumps(outcome) + '\n')
         return outcome
+
+    def maintenance(self, revision, receipt):
+        if not re.fullmatch('[a-f0-9]{40}', revision) or not re.fullmatch('deployment-[a-z0-9_]{8}', receipt):
+            raise ValueError('E_MAINTENANCE_REFERENCE')
+        run = self.base / receipt
+        value = json.loads((run / 'rollback.private.json' if (run / 'rollback.private.json').exists() else run / 'result.private.json').read_text())
+        before = json.loads((run / 'before.private.json').read_text())
+        if value.get('revision') != revision or value.get('receipt') != receipt or value.get('status') != 'RolledBackHealthy':
+            raise ValueError('E_MAINTENANCE_STATE')
+        if {n: tree(self.base / n) for n in ('app', 'public')} != before:
+            raise ValueError('E_MAINTENANCE_CODE_CHANGED')
+        (run / 'maintenance-started').open('x').close()
+        gate = self.gates / 'OPEN_APPROVED'
+        if os.path.lexists(gate):
+            s = gate.lstat()
+            if not stat.S_ISREG(s.st_mode) or gate.is_symlink() or s.st_nlink != 1 or s.st_size:
+                raise ValueError('E_PUBLIC_AUTHORIZATION_FILE')
+            gate.rename(self.gates / (receipt + '.OPEN_APPROVED.unhealthy'))
+        return {'status': 'StoppedMaintenance', 'revision': revision, 'receipt': receipt, 'publicReopened': False}
 
 
 def health():
@@ -208,6 +262,11 @@ def health():
             with opener.open('http://127.0.0.1:4173/health', timeout=3) as response:
                 payload = response.read(4097)
                 if len(payload) <= 4096 and response.status == 200 and json.loads(payload).get('status') == 'ok':
+                    check = Path('/usr/local/libexec/cartehesta/boot-public.py')
+                    s = check.lstat()
+                    if check.is_symlink() or not stat.S_ISREG(s.st_mode) or s.st_uid != 0 or s.st_mode & 0o022 or s.st_nlink != 1:
+                        raise PermissionError('E_TRUSTED_HEALTH_POLICY')
+                    runpy.run_path(str(check), run_name='trusted_health')['production_health']()
                     return
         except (OSError, ValueError):
             pass
@@ -222,6 +281,7 @@ def main():
     parser.add_argument('manifest_sha256')
     parser.add_argument('--reopen', action='store_true')
     parser.add_argument('--rollback', action='store_true')
+    parser.add_argument('--maintenance', action='store_true')
     parser.add_argument('--ticket')
     args = parser.parse_args()
     if os.name != 'posix' or os.geteuid() != 0:
@@ -261,7 +321,11 @@ def main():
         # Its ownership and the dedicated unit/Node pin are installation preconditions.
         controller = Deployment('/srv/cartehesta', '/run/cartehesta-gates',
                                 '/srv/cartehesta-incoming', service, health, verify_release, payload_layout=True)
-        if args.rollback:
+        if args.maintenance:
+            if args.reopen or args.rollback or args.ticket:
+                raise ValueError('E_MAINTENANCE_ARGUMENTS')
+            result = controller.maintenance(args.revision, args.manifest_sha256)
+        elif args.rollback:
             if args.reopen:
                 raise ValueError('E_ROLLBACK_REOPEN')
             result = controller.rollback(args.revision, args.manifest_sha256)

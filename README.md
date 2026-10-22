@@ -6,7 +6,7 @@ Carte interactive et outils narratifs pour l'univers d'Hesta : exploration des l
 
 Le site [Carte Hesta](https://cartehesta.dannytech.fr/) est en production. Le dépôt officiel public est [Daneisra/Carte-Hesta](https://github.com/Daneisra/Carte-Hesta) ; l'historique antérieur est conservé séparément dans des archives privées, sans réimport dans ce dépôt.
 
-La CI est automatique ; Deploy reste manuel, limité à main et soumis à approbation. Le mécanisme systemd de redémarrage est installé et actif : son premier lancement a conservé le site ouvert. Son comportement lors d'un véritable redémarrage reste à observer. Voir [Redémarrage](docs/REDEMARRAGE.md).
+Un push sur main déclenche la CI complète puis Deploy automatiquement après réussite, avec artefact et origine vérifiés. Les secrets restent dans l’environnement de production limité à main, sans approbation répétée. Le mécanisme systemd de redémarrage est installé et actif ; son comportement lors d'un véritable redémarrage reste à observer. Voir [Redémarrage](docs/REDEMARRAGE.md).
 
 La communauté, Discord et le support général relèvent du Portail Hesta. Les anomalies de Carte Hesta utilisent ses propres Issues. L'intégration avec le référentiel Hesta Codex reste à développer.
 
@@ -29,7 +29,7 @@ Utiliser Node 22 et le lockfile. Les tests génèrent exclusivement des données
     node tools/runIsolatedTests.js --unit
     node tools/runIsolatedTests.js --project=api
 
-Voir [Contribution](docs/CONTRIBUTING.md) pour toutes les suites, dont Chromium et Firefox sous Linux. La CI est automatique sur push et pull request ; le déploiement reste exclusivement manuel, avec autorisation et approbation de l’environnement de production.
+Voir [Contribution](docs/CONTRIBUTING.md) pour toutes les suites, dont Chromium et Firefox sous Linux. Les PR et CI manuelles ne déclenchent aucun déploiement. [Deploy](docs/DEPLOY-MANUEL.md) conserve un déclenchement manuel pour les interventions exceptionnelles.
 
 ## Documentation
 

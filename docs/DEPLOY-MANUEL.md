@@ -1,10 +1,10 @@
-# Deploy manuel contrôlé
+# Deploy après CI et interventions manuelles
 
-Le workflow Deploy est exclusivement manuel : workflow_dispatch sur main, confirmation explicite et environnement de production protégé. Un push ne déclenche que CI, avec uniquement des données synthétiques. Chaque déploiement réel nécessite une autorisation d'exploitation.
+Un push sur main déclenche la CI complète, puis Deploy automatiquement uniquement après sa réussite. CI utilise des données synthétiques et aucun secret de production. Les interventions exceptionnelles restent possibles par workflow_dispatch sur main avec confirmation DEPLOY CARTE HESTA et références explicites.
 
 ## Paramètres GitHub exacts
 
-Environnement : cartehesta-production, limité à main et avec approbation humaine lorsque le forfait le permet. Les secrets doivent appartenir à cet environnement, jamais au job CI ou à un workflow de PR.
+Environnement : cartehesta-production, limité à main, sans Required reviewers pour les mises à jour ordinaires. Les secrets restent dans cet environnement, jamais dans CI ou un workflow de PR. Les restrictions de branche sont conservées.
 
 | Type | Nom | Valeur à fournir |
 | --- | --- | --- |
@@ -32,20 +32,20 @@ Le transport dédié est installé et son premier essai GitHub Actions a réussi
 
 ## Déroulement du workflow
 
-1. Dispatch manuel sur main, confirmation DEPLOY CARTE HESTA, révision complète, run CI complet sur push/main pour cette révision et SHA-256 du manifeste approuvé. Les runs de PR, diagnostics API, artefacts expirés/ambigus et validations incomplètes sont refusés.
-2. Téléchargement de l'artefact CI exact, vérification de chaque fichier puis préparation d'un tar de code app/public/ops. Les données, médias, sessions, secrets et journaux sont exclus. Aucun rebuild de substitution au candidat testé.
-3. Après approbation de l'environnement, transport SSH strict avec clé d'hôte épinglée. La commande forcée reçoit uniquement un flux borné et des références validées. Elle crée un nouveau ticket privé à chaque tentative explicite, conserve le tar, vérifie son SHA-256 et extrait uniquement des fichiers/répertoires ordinaires ; liens, traversées, doublons et tailles excessives sont refusés. Aucun écrasement ni retry automatique.
+1. workflow_run accepte uniquement CI isolated security réussie, event push, branche main, dépôt et source Daneisra/Carte-Hesta. Le SHA doit encore correspondre à main. PR, forks, CI manuelles, diagnostics API et validations incomplètes sont refusés. Les déploiements sont sérialisés, sans annulation d'une activation en cours.
+2. Téléchargement de l'artefact immuable du run exact, vérification obligatoire du SHA-256 ZIP fourni par GitHub, extraction bornée puis vérification du manifeste et de chaque fichier. Le manifeste provient de cet artefact, jamais d'une ancienne recette. En dispatch manuel, son empreinte doit aussi correspondre à l'empreinte fournie. Les données, médias, sessions, secrets et journaux sont exclus. Aucun rebuild de substitution.
+3. Nouvelle vérification de main et de la CI avant transport SSH strict avec clé d'hôte épinglée. La commande forcée reçoit uniquement un flux borné et des références validées. Elle crée un nouveau ticket privé, conserve le tar et refuse liens, traversées, doublons et tailles excessives. Aucun retry automatique.
 4. Le contrôleur root prend un verrou exclusif, recopie dans une capsule privée et vérifie le manifeste avec la copie de confiance figée hors de app/public. Il ferme la gate publique, arrête seulement pm2-cartehesta.service, remplace ensemble app/public et démarre le service. Les données et les permissions existantes restent en place ; les fichiers ops reçus ne remplacent jamais automatiquement Nginx ou PM2.
-5. Santé locale bornée. En cas d'échec, rollback automatique du code, conservation des échecs et maintien HTTP 503. Les reçus et empreintes du code permettent aussi un seul rollback explicite après échec extérieur, avec refus si le code a changé entre-temps.
-6. reopen=false par défaut : maintenance conservée pour le premier essai et sa recette privée. Avec autorisation explicite, reopen=true restitue uniquement une gate déjà présente avant le déploiement ; un site initialement fermé ne devient jamais public implicitement.
-7. Vérification extérieure TLS, santé, accueil et refus sensibles ; un échec après activation déclenche le rollback code seul et conserve la maintenance. Une coupure SSH ne provoque aucun redéploiement automatique ; si le résultat est inconnu, examiner le reçu serveur avant toute nouvelle action.
+5. La référence before.private.json décrit exactement le code présent avant cette opération. Le candidat est comparé au manifeste vérifié, puis aux empreintes de son installation. Santé privée bornée : Node 22, service dédié, ports loopback, TLS, refus sensibles, isolation des API, chemins médias et Range. Le contrôle de santé root provient du script systemd installé hors du candidat.
+6. En automatique, la gate précédemment présente est restaurée après validation. Un site volontairement fermé reste fermé. En manuel, reopen=false conserve une maintenance de recette. Le mécanisme systemd et son verrou commun restent compatibles.
+7. En cas d'échec, une seule restauration du code antérieur est tentée et comparée au reçu immédiat. Si ce code et ses contrôles privés puis extérieurs sont sains, l'autorisation publique préservée est restaurée. Le workflow signale néanmoins l'échec du candidat. Si le rollback ou les contrôles extérieurs échouent, la commande restreinte maintenance ferme uniquement cette gate et le site reste à 503. Pas de boucle de déploiement, ni restauration de données. Une coupure SSH demande l'inspection du reçu avant toute nouvelle tentative.
 
-## Premier essai et limites
+## Interventions et limites
 
-Après autorisation VPS, installer les accès dédiés et tester la commande forcée avec des données fictives avant activation du workflow. Le premier déploiement reste manuel, avec reopen=false. Réutiliser la recette privée existante pour Discord, médias privés, Range, publications et permissions ; aucun cookie ou identifiant de média privé ne va dans les logs Actions. Après recette privée réussie, une autorisation explicite permet la réouverture contrôlée. Aucun déclencheur push/workflow_run de déploiement n'est ajouté.
+Le compte, la clé dédiée et le vérificateur figé sont conservés. Les changements de contrôleur root nécessitent une installation opérateur vérifiée, hors Deploy. Aucun cookie, identifiant de média privé ou secret applicatif ne va dans les logs Actions. Un run échoué reste visible même après retour à une version saine ; une nouvelle tentative exige une intervention explicite ou un nouveau changement validé par CI.
 
 Le rollback ne restaure jamais un store, une session, un média, un secret ou une ancienne configuration par-dessus l'état courant. Un verrou métier ou une erreur de transaction demande un diagnostic explicite, pas un déverrouillage automatique.
 
-Après redémarrage du VPS, /run reste éphémère et l'absence de gate maintient HTTP 503. La restauration vérifiée après arrêt normal est installée et décrite dans [REDEMARRAGE.md](REDEMARRAGE.md), avec installation opérateur distincte des deux fichiers root. Deploy reste manuel et ne les installe jamais implicitement.
+Après redémarrage du VPS, /run reste éphémère et l'absence de gate maintient HTTP 503. La restauration vérifiée après arrêt normal est installée et décrite dans [REDEMARRAGE.md](REDEMARRAGE.md). Deploy ne modifie jamais implicitement ces deux fichiers root.
 
 Références : [environnements et protection GitHub](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments).

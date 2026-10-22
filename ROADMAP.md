@@ -11,7 +11,7 @@ Les propositions et anomalies sont suivies dans les [Issues](https://github.com/
 - [x] Stockage privé séparé du code et contrôle serveur des publications et médias.
 - [x] Dépôt GitHub public indépendant ; ancien historique conservé en privé.
 - [x] Migration, remise en production et recette des fonctionnalités essentielles.
-- [x] CI Linux automatique et Deploy manuel protégé avec rollback du code.
+- [x] CI Linux complète, Deploy après réussite sur push/main, artefact vérifié et rollback du code ; dispatch manuel conservé pour les interventions exceptionnelles.
 - [x] Mécanisme systemd de redémarrage installé et premier lancement validé sans interruption.
 - [ ] Observer sa restauration publique lors d'un véritable redémarrage normal du VPS.
 

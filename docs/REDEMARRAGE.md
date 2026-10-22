@@ -44,7 +44,7 @@ sudo journalctl -u cartehesta-public-boot.service --no-pager -n 10
 
 Refuser une destination préexistante différente sans revue ; conserver les versions remplacées. L'installation initiale doit annoncer `AlreadyOpenValidated`, avec HTTPS public toujours 200. Elle ne redémarre ni Nginx ni Carte Hesta. Ne pas tester en redémarrant le VPS ; les scénarios de boot sont simulés par les tests synthétiques, et la syntaxe/les dépendances systemd sont vérifiées en CI Linux.
 
-Le candidat applicatif du même commit reste déployable par le workflow manuel habituel : CI complète `push/main`, artefact exact, empreinte du manifeste, approbation de `cartehesta-production`, `reopen=false`, recette et réouverture contrôlée. Ce Deploy **ne remplace pas** l'installation opérateur des deux fichiers root. Aucun changement de workflow n'est requis.
+Le candidat applicatif est déployé après la CI complète `push/main`, depuis son artefact exact et son manifeste vérifié. L’environnement `cartehesta-production` reste limité à main sans approbation répétée. Deploy réutilise le verrou et les contrôles de santé du mécanisme de redémarrage ; une maintenance volontaire reste fermée. Ce Deploy **ne remplace pas** l'installation opérateur des deux fichiers root.
 
 ## Arrêt du mécanisme et rollback
 

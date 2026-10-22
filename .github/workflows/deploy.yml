@@ -1,5 +1,9 @@
-name: Deploy reviewed candidate
+name: Deploy verified candidate
 on:
+  workflow_run:
+    workflows: [CI isolated security]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       revision:
@@ -29,7 +33,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   prepare-only:
-    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'Daneisra/Carte-Hesta' && github.ref == 'refs/heads/main' }}
+    if: ${{ github.repository == 'Daneisra/Carte-Hesta' && github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository)) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -40,18 +44,15 @@ jobs:
         shell: bash --noprofile --norc -euo pipefail {0}
     outputs:
       archive_sha256: ${{ steps.archive.outputs.sha256 }}
+      revision: ${{ steps.provenance.outputs.revision }}
+      ci_run_id: ${{ steps.provenance.outputs.ci_run_id }}
+      manifest_sha256: ${{ steps.archive.outputs.manifest_sha256 }}
     steps:
-      - name: Require explicit main-only authorization
-        env:
-          CONFIRMATION: ${{ inputs.confirmation }}
-        run: |
-          test "$GITHUB_REPOSITORY" = Daneisra/Carte-Hesta
-          test "$GITHUB_REF" = refs/heads/main
-          test "$CONFIRMATION" = 'DEPLOY CARTE HESTA'
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
           lfs: false
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22.23.2'
@@ -59,25 +60,31 @@ jobs:
         id: provenance
         env:
           GH_TOKEN: ${{ github.token }}
-          CI_RUN_ID: ${{ inputs.ci_run_id }}
-          REVISION: ${{ inputs.revision }}
+          CI_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.ci_run_id }}
+          REVISION: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || inputs.revision }}
+          CONFIRMATION: ${{ inputs.confirmation }}
         run: node .github/scripts/verify-ci-run.cjs
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          github-token: ${{ github.token }}
-          repository: Daneisra/Carte-Hesta
-          run-id: ${{ inputs.ci_run_id }}
-          artifact-ids: ${{ steps.provenance.outputs.artifact_id }}
-          path: ${{ runner.temp }}/reviewed-candidate
-          merge-multiple: true
+      - name: Download immutable CI artifact and require its ZIP SHA-256
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.provenance.outputs.artifact_id }}
+          ARTIFACT_SHA256: ${{ steps.provenance.outputs.artifact_sha256 }}
+          CANDIDATE_DIRECTORY: ${{ runner.temp }}/reviewed-candidate
+        run: python3 -I -B .github/scripts/download-ci-artifact.py
       - name: Verify release and prepare bounded code-only transport
         id: archive
         env:
-          REVISION: ${{ inputs.revision }}
+          REVISION: ${{ steps.provenance.outputs.revision }}
           EXPECTED_MANIFEST: ${{ inputs.manifest_sha256 }}
+          AUTOMATIC: ${{ github.event_name == 'workflow_run' && 'true' || 'false' }}
         run: |
-          [[ "$EXPECTED_MANIFEST" =~ ^[a-f0-9]{64}$ ]]
-          node tools/deployment.js verify "$RUNNER_TEMP/reviewed-candidate" "$REVISION" "$EXPECTED_MANIFEST"
+          actual_manifest=$(sha256sum "$RUNNER_TEMP/reviewed-candidate/release-manifest.json" | cut -d' ' -f1)
+          if [[ "$AUTOMATIC" != true ]]; then
+            [[ "$EXPECTED_MANIFEST" =~ ^[a-f0-9]{64}$ ]]
+            test "$actual_manifest" = "$EXPECTED_MANIFEST"
+          fi
+          node tools/deployment.js verify "$RUNNER_TEMP/reviewed-candidate" "$REVISION" "$actual_manifest"
+          echo "manifest_sha256=$actual_manifest" >> "$GITHUB_OUTPUT"
           tar -C "$RUNNER_TEMP/reviewed-candidate" -cf "$RUNNER_TEMP/code.tar" app public ops release-manifest.json
           echo "sha256=$(sha256sum "$RUNNER_TEMP/code.tar" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -86,11 +93,9 @@ jobs:
           path: ${{ runner.temp }}/code.tar
           if-no-files-found: error
           retention-days: 3
-  # Transport is deliberately not provisioned by a source push. The server-side
-  # restricted account/controller contract and activation checklist are in
-  # docs/DEPLOY-MANUEL.md. Each run remains manual, main-only and environment-reviewed.
+  # CI has no deployment secrets. Only this serialized main-only job can use SSH.
   activate-reviewed:
-    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'Daneisra/Carte-Hesta' && github.ref == 'refs/heads/main' }}
+    if: ${{ github.repository == 'Daneisra/Carte-Hesta' && github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository)) }}
     needs: prepare-only
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -106,18 +111,26 @@ jobs:
         with:
           persist-credentials: false
           lfs: false
+          ref: ${{ needs.prepare-only.outputs.revision }}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: reviewed-transport-${{ github.sha }}
           path: ${{ runner.temp }}/transport
+      - name: Recheck exact main and CI immediately before activation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_RUN_ID: ${{ needs.prepare-only.outputs.ci_run_id }}
+          REVISION: ${{ needs.prepare-only.outputs.revision }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: node .github/scripts/verify-ci-run.cjs
       - name: Restricted SSH activation and external health with code-only rollback
         env:
           DEPLOY_HOST: ${{ vars.CARTE_DEPLOY_HOST }}
           DEPLOY_PORT: ${{ vars.CARTE_DEPLOY_PORT }}
           DEPLOY_SSH_KEY: ${{ secrets.CARTE_DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.CARTE_DEPLOY_KNOWN_HOSTS }}
-          REVISION: ${{ inputs.revision }}
-          MANIFEST_SHA256: ${{ inputs.manifest_sha256 }}
+          REVISION: ${{ needs.prepare-only.outputs.revision }}
+          MANIFEST_SHA256: ${{ needs.prepare-only.outputs.manifest_sha256 }}
           ARCHIVE_SHA256: ${{ needs.prepare-only.outputs.archive_sha256 }}
-          REOPEN: ${{ inputs.reopen && 'true' || 'false' }}
+          REOPEN: ${{ (github.event_name == 'workflow_run' || inputs.reopen) && 'true' || 'false' }}
         run: python3 -I -B .github/scripts/transport-deploy.py

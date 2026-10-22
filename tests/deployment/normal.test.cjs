@@ -27,6 +27,10 @@ for (const [name, mutate] of [
     ['other repository', s => s.run.head_repository.full_name = 'attacker/Carte-Hesta'],
     ['other workflow', s => s.workflow.path = '.github/workflows/other.yml'],
     ['other revision', s => s.run.head_sha = 'c'.repeat(40)],
+    ['failed CI', s => s.run.conclusion = 'failure'],
+    ['unfinished CI', s => s.run.status = 'in_progress'],
+    ['non-main branch', s => s.run.head_branch = 'feature'],
+    ['foreign source run', s => s.run.repository.full_name = 'other/Carte-Hesta'],
     ['expired artifact', s => s.artifacts.artifacts[0].expired = true],
     ['incomplete jobs', s => s.jobs.total_count = 2],
     ['incomplete artifacts', s => s.artifacts.total_count = 2],
@@ -72,15 +76,19 @@ for mode in ('success-open', 'success-closed', 'health-failure', 'verifier-failu
     deployment=m.Deployment(base,gates,incoming,service,health,verify)
     try:
       outcome=deployment.execute(rev,'b'*64,reopen=True)
-      assert mode.startswith('success') and outcome['status']=='Activated'
-      assert all((base/n/'code.txt').read_text()=='new' for n in ('app','public'))
-      assert gate.exists() == (mode == 'success-open')
+      if mode.startswith('success'):
+        assert outcome['status']=='Activated'
+        assert all((base/n/'code.txt').read_text()=='new' for n in ('app','public'))
+        assert gate.exists() == (mode == 'success-open')
+      else:
+        assert mode in ('health-failure','partial-swap-failure') and outcome['status']=='RolledBackHealthy'
+        assert {n:m.tree(base/n) for n in ('app','public')} == original and gate.exists()
     except RuntimeError:
       assert mode.endswith('failure')
       assert {n:m.tree(base/n) for n in ('app','public')} == original
       if mode == 'verifier-failure': assert commands == [] and gate.exists()
       else: assert commands == ['stop','start','stop','start'] if mode=='health-failure' else commands==['stop','stop','start']
-      if mode != 'verifier-failure': assert not gate.exists()
+      if mode != 'verifier-failure': assert gate.exists()
     finally:
       if mode == 'partial-swap-failure': pathlib.Path.rename=original_rename
     assert m.tree(base/'data') == data

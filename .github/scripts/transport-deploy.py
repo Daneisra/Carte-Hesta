@@ -47,7 +47,8 @@ def external_health(reopened):
             return None
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     root = 'https://cartehesta.dannytech.fr'
-    checks = [('/', 200), ('/health', 200), ('/api/admin/users', 401), ('/assets/users.json', 404),
+    checks = [('/', 200), ('/health', 200), ('/map/', 200), ('/timeline/', 200), ('/planning/', 200),
+              ('/api/admin/users', 401), ('/assets/users.json', 404),
               ('/.env', 404), ('/server.js', 404)] if reopened else [('/', 503)]
     for endpoint, expected in checks:
         try:
@@ -77,16 +78,28 @@ def deploy(config, archive, ssh, runner, health):
     with archive.open('rb') as content:
         result = runner(ssh + [request], content)
     value = json.loads(result)
-    if value.get('status') != 'Activated' or value.get('revision') != config['REVISION'] or not re.fullmatch('deployment-[a-z0-9_]{8}', value.get('receipt', '')) or not isinstance(value.get('publicReopened'), bool):
+    if value.get('status') not in ('Activated', 'RolledBackHealthy') or value.get('revision') != config['REVISION'] or value.get('manifestSha256') != config['MANIFEST_SHA256'] or not re.fullmatch('deployment-[a-z0-9_]{8}', value.get('receipt', '')) or not isinstance(value.get('publicReopened'), bool):
         raise ValueError('E_CONTROLLER_RECEIPT')
+    def verify_rollback(rollback):
+        if rollback.get('status') not in ('RolledBackHealthy', 'RolledBackMaintenance') or rollback.get('revision') != config['REVISION'] or rollback.get('receipt') != value['receipt'] or not isinstance(rollback.get('publicReopened'), bool):
+            raise RuntimeError('E_EXTERNAL_ROLLBACK_UNVERIFIED')
+        try:
+            health(rollback['publicReopened'])
+        except Exception:
+            closed = json.loads(runner(ssh + ['maintenance ' + config['REVISION'] + ' ' + value['receipt']], None))
+            if closed.get('status') != 'StoppedMaintenance' or closed.get('publicReopened') is not False:
+                raise RuntimeError('E_MAINTENANCE_UNVERIFIED') from None
+            raise RuntimeError('E_ROLLBACK_EXTERNAL_UNHEALTHY_MAINTENANCE') from None
+    if value['status'] == 'RolledBackHealthy':
+        verify_rollback(value)
+        raise RuntimeError('E_DEPLOY_FAILED_HEALTHY_ROLLBACK')
     try:
         health(value['publicReopened'])
     except Exception:
         # One explicit rollback call; never retry a failed deployment or overwrite data.
         rollback = json.loads(runner(ssh + ['rollback ' + config['REVISION'] + ' ' + value['receipt']], None))
-        if rollback.get('status') != 'RolledBackMaintenance' or rollback.get('revision') != config['REVISION']:
-            raise RuntimeError('E_EXTERNAL_ROLLBACK_UNVERIFIED') from None
-        raise RuntimeError('E_EXTERNAL_FAILED_CODE_ROLLED_BACK_MAINTENANCE') from None
+        verify_rollback(rollback)
+        raise RuntimeError('E_EXTERNAL_FAILED_HEALTHY_CODE_ROLLBACK') from None
     return value
 
 

@@ -1,6 +1,18 @@
 // Deployment provenance only. Never accepts PRs, API-only runs or another revision.
 const fs = require('node:fs');
 const REPO = 'Daneisra/Carte-Hesta';
+function trigger(name, event, revision, id, confirmation) {
+    if (name === 'workflow_dispatch') {
+        if (confirmation !== 'DEPLOY CARTE HESTA') throw Error('E_DEPLOY_CONFIRMATION');
+        return { revision, id };
+    }
+    const run = event?.workflow_run;
+    if (name !== 'workflow_run' || event.action !== 'completed' || event.repository?.full_name !== REPO ||
+        run?.name !== 'CI isolated security' || run.conclusion !== 'success' || run.event !== 'push' ||
+        run.head_branch !== 'main' || run.head_repository?.full_name !== REPO ||
+        run.head_sha !== revision || String(run.id) !== id) throw Error('E_DEPLOY_TRIGGER');
+    return { revision, id };
+}
 function validate({ run, workflow, jobs, artifacts }, revision, current) {
     if (!/^[a-f0-9]{40}$/.test(revision || '') || revision !== current) throw Error('E_DEPLOY_REVISION');
     if (workflow.path !== '.github/workflows/ci.yml' || workflow.state !== 'active' ||
@@ -23,8 +35,10 @@ function validate({ run, workflow, jobs, artifacts }, revision, current) {
     return matches[0];
 }
 async function main() {
-    const { CI_RUN_ID: id, REVISION: revision, GITHUB_SHA: current, GH_TOKEN: token, GITHUB_OUTPUT: output } = process.env;
+    const { CI_RUN_ID: id, REVISION: revision, GH_TOKEN: token, GITHUB_OUTPUT: output,
+        GITHUB_EVENT_NAME: eventName, GITHUB_EVENT_PATH: eventPath, CONFIRMATION: confirmation } = process.env;
     if (!/^[1-9][0-9]{0,14}$/.test(id || '') || !token || !output) throw Error('E_DEPLOY_INPUTS');
+    trigger(eventName, JSON.parse(fs.readFileSync(eventPath)), revision, id, confirmation);
     async function api(suffix) {
         const response = await fetch('https://api.github.com/repos/' + REPO + suffix, {
             headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
@@ -33,13 +47,15 @@ async function main() {
         if (!response.ok) throw Error('E_DEPLOY_CI_HTTP_' + response.status);
         return response.json();
     }
-    const [run, workflow, jobs, artifacts] = await Promise.all([
+    const [run, workflow, jobs, artifacts, main] = await Promise.all([
         api('/actions/runs/' + id), api('/actions/workflows/ci.yml'),
-        api('/actions/runs/' + id + '/jobs?filter=latest&per_page=100'), api('/actions/runs/' + id + '/artifacts?per_page=100')
+        api('/actions/runs/' + id + '/jobs?filter=latest&per_page=100'), api('/actions/runs/' + id + '/artifacts?per_page=100'),
+        api('/git/ref/heads/main')
     ]);
-    const artifact = validate({ run, workflow, jobs, artifacts }, revision, current);
-    fs.appendFileSync(output, 'artifact_id=' + artifact.id + '\nartifact_sha256=' + artifact.digest.slice(7) + '\n');
+    const artifact = validate({ run, workflow, jobs, artifacts }, revision, main.object.sha);
+    if (run.id !== Number(id)) throw Error('E_DEPLOY_RUN_ID');
+    fs.appendFileSync(output, 'revision=' + revision + '\nci_run_id=' + id + '\nartifact_id=' + artifact.id + '\nartifact_sha256=' + artifact.digest.slice(7) + '\n');
     console.log('Exact full Linux CI revision and artifact provenance verified');
 }
 if (require.main === module) main().catch(e => { console.error(e.message); process.exitCode = 1; });
-module.exports = { validate };
+module.exports = { validate, trigger };

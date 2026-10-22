@@ -37,6 +37,6 @@ test('boot unit captures before dedicated shutdown without changing Deploy or in
     const release = require('../../tools/deployment/release');
     assert(!release.OPS.includes('boot-public.py')); // Frozen root policy remains operator-managed.
     const deploy = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/deploy.yml'), 'utf8');
-    assert(deploy.includes('workflow_dispatch:')); assert(!/^  (?:push|workflow_run):/m.test(deploy));
+    assert(deploy.includes('workflow_dispatch:')); assert(!/^  push:/m.test(deploy)); assert(deploy.includes('workflow_run:'));
     assert(deploy.includes('environment: cartehesta-production'));
 });

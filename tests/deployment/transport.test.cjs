@@ -54,13 +54,14 @@ with tempfile.TemporaryDirectory(prefix='cartehesta-ssh-synthetic-') as director
   code=root/'code.tar'; code.write_bytes(data)
   calls=[]
   def run(args,source):
-    calls.append(args[-1]); return json.dumps({'status':'RolledBackMaintenance' if args[-1].startswith('rollback ') else 'Activated','revision':rev,'receipt':'deployment-abcdefgh','publicReopened':False}).encode()
+    calls.append(args[-1]); status='RolledBackHealthy' if args[-1].startswith('rollback ') else 'StoppedMaintenance' if args[-1].startswith('maintenance ') else 'Activated'
+    return json.dumps({'status':status,'revision':rev,'manifestSha256':digest,'receipt':'deployment-abcdefgh','publicReopened':False}).encode()
   result=client.deploy(cfg,code,['synthetic-ssh'],run,lambda opened: None)
   assert result['status']=='Activated' and len(calls)==1; checks+=1
   calls.clear()
   def failed_health(_): raise RuntimeError('synthetic external failure')
   rejects(lambda:client.deploy(cfg,code,['synthetic-ssh'],run,failed_health))
-  assert len(calls)==2 and calls[1]=='rollback '+rev+' deployment-abcdefgh'; checks+=1
+  assert len(calls)==3 and calls[1]=='rollback '+rev+' deployment-abcdefgh' and calls[2]=='maintenance '+rev+' deployment-abcdefgh'; checks+=1
   calls.clear(); rejects(lambda:client.deploy({**cfg,'ARCHIVE_SHA256':'0'*64},code,['synthetic-ssh'],run,failed_health)); assert not calls
   base=root/'base'; gates=root/'gates'; incoming=root/'incoming'
   for p in (base,gates,incoming): p.mkdir()
@@ -72,7 +73,7 @@ with tempfile.TemporaryDirectory(prefix='cartehesta-ssh-synthetic-') as director
   (gates/'OPEN_APPROVED').touch(); commands=[]
   d=controller.Deployment(base,gates,incoming,lambda action: commands.append(action),lambda:None,lambda *a:None)
   activated=d.execute(rev,digest,True); rolled=d.rollback(rev,activated['receipt'])
-  assert rolled['status']=='RolledBackMaintenance' and not (gates/'OPEN_APPROVED').exists()
+  assert rolled['status']=='RolledBackHealthy' and (gates/'OPEN_APPROVED').exists()
   assert all((base/n/'code').read_text()=='old' for n in ('app','public'))
   assert controller.tree(base/'data')==private and commands==['stop','start','stop','start']; checks+=1
   rejects(lambda:d.rollback(rev,activated['receipt']))
