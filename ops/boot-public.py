@@ -12,6 +12,7 @@ import ssl
 import stat
 import subprocess
 import sys
+import time
 import uuid
 
 
@@ -162,11 +163,34 @@ def production_fingerprint():
     return hashlib.sha256(json.dumps(entries, sort_keys=True).encode()).hexdigest()
 
 
+def backend_ready():
+    connection = http.client.HTTPConnection('127.0.0.1', 4173, timeout=2)
+    try:
+        connection.request('GET', '/health')
+        response = connection.getresponse()
+        body = response.read(4097)
+        return response.status == 200 and len(body) <= 4096 and json.loads(body).get('status') == 'ok'
+    except (OSError, ValueError):
+        return False
+    finally:
+        connection.close()
+
+
+def wait_ready(check=backend_ready, clock=time.monotonic, pause=time.sleep):
+    deadline = clock() + 30
+    while not check():
+        require(clock() < deadline, 'E_BACKEND_READINESS_TIMEOUT')
+        pause(0.2)
+
+
 def production_health():
     clean = {'PATH': '/usr/sbin:/usr/bin:/bin', 'LANG': 'C.UTF-8'}
     for args in (['/usr/bin/systemctl', 'is-active', 'pm2-cartehesta.service'], ['/usr/bin/systemctl', 'is-active', 'nginx.service']):
         result = subprocess.run(args, capture_output=True, timeout=10, env=clean)
         require(result.returncode == 0, 'E_SERVICE_OR_NGINX')
+    # PM2 Type=forking readiness is not HTTP readiness. This is a bounded health
+    # poll, not a fixed startup delay or a retry of failed security checks.
+    wait_ready()
     # Both public-backend and HTTPS-recipe listeners must remain loopback-only.
     for port in (4173, 4181):
         listeners = []

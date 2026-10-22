@@ -9,7 +9,7 @@ test('clean restart handoff, maintenance, incident recovery and HTTPS policy use
     const result = JSON.parse(execFileSync(process.platform === 'win32' ? 'python' : 'python3',
         ['-I', '-B', path.join(__dirname, 'boot_synthetic.py'), path.resolve(__dirname, '../../ops/boot-public.py')],
         { encoding: 'utf8', windowsHide: true }));
-    assert.equal(result.tests, 29);
+    assert.equal(result.tests, 33);
     assert.equal(result.failures, 0); assert.equal(result.errors, 0);
     assert.equal(result.skipped, process.platform === 'win32' ? 2 : 0);
 });

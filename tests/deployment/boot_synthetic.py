@@ -210,7 +210,7 @@ class Health(unittest.TestCase):
 
     def run_health(self, mode):
         fake_path, connection, run = self.fixture(mode)
-        with patch.object(m, 'Path', fake_path), patch.object(m, 'trusted'), patch.object(m.subprocess, 'run', run), patch.object(m.os, 'readlink', return_value='/opt/node-v22.23.2-linux-x64/bin/node'), patch.object(m.http.client, 'HTTPSConnection', connection):
+        with patch.object(m, 'Path', fake_path), patch.object(m, 'trusted'), patch.object(m, 'wait_ready'), patch.object(m.subprocess, 'run', run), patch.object(m.os, 'readlink', return_value='/opt/node-v22.23.2-linux-x64/bin/node'), patch.object(m.http.client, 'HTTPSConnection', connection):
             m.production_health()
 
     def test_complete_https_checks(self): self.run_health('success')
@@ -228,6 +228,28 @@ class Health(unittest.TestCase):
         with self.assertRaisesRegex(m.Refused, 'E_PRIVATE_API_EXPOSED'): self.run_health('privacy')
     def test_failed_range(self):
         with self.assertRaisesRegex(m.Refused, 'E_MEDIA_RANGE'): self.run_health('range')
+
+
+class Readiness(unittest.TestCase):
+    def test_delayed_node_readiness(self):
+        now = [0]
+        def pause(seconds): now[0] += seconds
+        m.wait_ready(lambda: now[0] >= 1, lambda: now[0], pause)
+        self.assertLess(now[0], 2)
+
+    def test_dead_backend_is_bounded(self):
+        now = [0]
+        def pause(seconds): now[0] += seconds
+        with self.assertRaisesRegex(m.Refused, 'E_BACKEND_READINESS_TIMEOUT'):
+            m.wait_ready(lambda: False, lambda: now[0], pause)
+        self.assertLess(now[0], 31)
+
+    def test_ready_backend_has_no_arbitrary_delay(self):
+        m.wait_ready(lambda: True, lambda: 0, lambda _seconds: self.fail('Unexpected sleep'))
+
+    def test_unknown_readiness_error_is_not_retried(self):
+        with self.assertRaises(ValueError):
+            m.wait_ready(lambda: (_ for _ in ()).throw(ValueError('fictional')), lambda: 0, lambda _seconds: self.fail('Unexpected retry'))
 
 
 if __name__ == '__main__':
