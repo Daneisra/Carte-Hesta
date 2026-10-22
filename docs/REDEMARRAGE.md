@@ -1,6 +1,8 @@
 # Retour public après un redémarrage normal
 
-Préparation locale uniquement. L'installation des deux fichiers de confiance nécessite une autorisation VPS ; un push ou Deploy ne les installe jamais comme root.
+Installé et actif depuis le 22 octobre 2026. Le premier démarrage a renvoyé `AlreadyOpenValidated`, sans remplacement de la gate ni interruption du HTTPS public 200. Les 33 scénarios synthétiques et la validation systemd Linux ont réussi. Le comportement lors d'un véritable redémarrage du VPS reste à confirmer à la prochaine occasion.
+
+Les commandes d'installation ci-dessous sont conservées pour l'exploitation et nécessitent une autorisation distincte ; un push ou Deploy ne remplace jamais ces fichiers de confiance comme root.
 
 ## Comportement
 

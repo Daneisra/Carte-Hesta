@@ -112,7 +112,7 @@ export const normalizeAdminSiteConfig = (config = {}) => {
             })
         },
         support: {
-            issuesUrl: sanitizeString(support.issuesUrl || 'https://github.com/Daneisra/Carte-Interactive/issues'),
+            issuesUrl: sanitizeString(support.issuesUrl || 'https://github.com/Daneisra/Carte-Hesta/issues/new/choose'),
             contactEmail: sanitizeString(support.contactEmail || 'contact@cartehesta.local')
         },
         legal: {

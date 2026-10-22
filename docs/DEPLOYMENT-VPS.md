@@ -10,9 +10,9 @@ CI s'exécute sur push main et pull_request, avec fixtures synthétiques et sans
 
 Le nouveau workflow Deploy n'a qu'un déclencheur manuel. Ses jobs exigent le dépôt officiel et main ; le transport exige l’approbation de l’environnement de production. Un push ne déclenche jamais Deploy. Il sélectionne un run complet CI sur push main, dans ce dépôt et sur la révision exacte ; une validation API seule ou un run de PR ne convient pas. L'artefact existant est téléchargé et vérifié, jamais reconstruit comme substitut à celui testé.
 
-Le contrôleur proposé ops/deploy-code.py prépare une copie privée, vérifie le manifeste avec un vérificateur root figé hors de app/public, ferme la gate publique, arrête uniquement le service dédié et remplace ensemble app/public. Il conserve le code précédent et les échecs. Un échec d'activation ou de santé entraîne un rollback du code et maintient HTTP 503 ; aucune donnée n'est restaurée automatiquement.
+Le contrôleur installé, issu de ops/deploy-code.py, prépare une copie privée, vérifie le manifeste avec un vérificateur root figé hors de app/public, ferme la gate publique, arrête uniquement le service dédié et remplace ensemble app/public. Il conserve le code précédent et les échecs. Un échec d'activation ou de santé entraîne un rollback du code et maintient HTTP 503 ; aucune donnée n'est restaurée automatiquement.
 
-Le transport SSH par commande forcée est implémenté et testé sur fichiers synthétiques. Le contrôleur et le compte de transport ne sont PAS installés par un push. Voir [procédure et conditions d'activation](DEPLOY-MANUEL.md). Aucun changement Nginx, DNS, callback Discord, secret ou schéma n'est inclus dans cette mise à jour.
+Le transport SSH par commande forcée est installé et le premier Deploy GitHub Actions a été validé en production. Le contrôleur et le compte de transport ne sont PAS installés par un push. Voir [procédure et conditions d'activation](DEPLOY-MANUEL.md). Le mécanisme systemd de redémarrage est installé séparément ; voir [son état et sa procédure](REDEMARRAGE.md). Aucun de ces composants système n'est modifié implicitement par Deploy.
 
 ## Réouverture et retour arrière
 

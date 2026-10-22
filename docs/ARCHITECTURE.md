@@ -20,3 +20,7 @@ Les écritures utilisent le stockage atomique, un bail d'écrivain unique et un 
 Les grands PNG/MP3 sont diffusés par blocs vérifiés, avec backpressure et HTTP Range, sans chargement intégral en mémoire. Les limites d'upload et d'archives restent distinctes.
 
 La CI construit un candidat contenant uniquement app/public et des propositions ops. Les données, médias, secrets et journaux sont provisionnés séparément et ne doivent jamais être recopiés depuis Git. Voir [Gestion des données](DATA-MANAGEMENT.md), [Contribution](CONTRIBUTING.md) et [Déploiement](DEPLOYMENT-VPS.md).
+
+## Responsabilités dans l'écosystème
+
+Le [Portail Hesta](https://hesta.dannytech.fr/) centralise la communauté et l'accès aux applications. Carte Hesta conserve la carte, les coordonnées, la chronologie affichée, le planning et l'administration JDR. [Hesta Codex](https://codexhesta.dannytech.fr/) est le futur référentiel canonique du lore durable ; les sources des lieux, personnages et événements devront d'abord être inventoriées, puis reliées par des identifiants stables et des contrats de lecture validés. Cette intégration n'est pas encore réalisée. [Système PA](https://pahesta.dannytech.fr/) conserve ses règles, ses calculs et son stockage local indépendants.

@@ -13,7 +13,7 @@ test.describe('Geek Unchained - page publique', () => {
     await expect(page.locator('body')).toContainText('Vikings de Dipovia');
     await expect(page.locator('a[href="/map/"]').first()).toBeVisible();
     await expect(page.locator('a[href="/timeline/"]').first()).toBeVisible();
-    await expect(page.locator('a[href="https://discord.gg/sCFWb87SBY"]').first()).toBeVisible();
+    await expect(page.locator('a[href="https://hesta.dannytech.fr/#communaute"]').first()).toBeVisible();
     await expect(page.locator('#gu-version')).toHaveText('0.17.49');
   });
 
