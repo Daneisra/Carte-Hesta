@@ -326,15 +326,6 @@ button:focus-visible {
     outline-offset: 2px;
 }
 
-#home-community-portal-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    max-width: 100%;
-    margin-top: 12px;
-    white-space: normal;
-}
-
 .home-link-button:hover,
 .home-link-button:focus-visible,
 .home-cta:hover,
@@ -937,7 +928,7 @@ button:focus-visible {
 }
 
 .home-grid-topics {
-    grid-template-columns: minmax(0, 0.96fr) minmax(0, 0.96fr) minmax(320px, 1.08fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .home-grid-newsband,
