@@ -14,11 +14,9 @@ Pour fermer le site, déplacer la gate publique dans un nouveau nom conservé au
 
 ## Après redémarrage du VPS
 
-/run est éphémère : le retour à HTTP 503 est le comportement sûr prévu. Le démarrage du service seul ne vaut pas approbation de publication. Ne pas ajouter un touch OPEN_APPROVED inconditionnel dans systemd.
+/run est éphémère : sans autorisation persistante vérifiée, le retour à HTTP 503 reste le comportement sûr. La restauration après un arrêt normal est préparée dans [REDEMARRAGE.md](REDEMARRAGE.md) : une autorisation à usage unique, des contrôles HTTPS privés et une unité dédiée. Son installation VPS nécessite une autorisation distincte ; aucun touch OPEN_APPROVED inconditionnel n'est ajouté.
 
-Stratégie initiale : conserver la réouverture manuelle contrôlée. Vérifier le service dédié sous Node 22, son port loopback, /health, le manifeste de code actif, les permissions et l'absence d'erreur de stockage ; tester les refus sensibles par le canal de recette puis contrôler Nginx/TLS. Recréer la gate seulement avec autorisation de réouverture, puis vérifier depuis l'extérieur. En cas d'échec, retirer l'accès public en conservant le fichier de gate et les journaux.
-
-Une automatisation de réouverture au boot demanderait une autorisation distincte et une preuve persistante liée à la révision et aux contrôles de permissions. Preuve absente, périmée ou invalide : HTTP 503. Elle ne doit modifier ni Nginx ni les données. Aucune unité supplémentaire n'est installée dans cette préparation.
+Maintenance volontaire, incident ou état incertain : conserver le 503. Après réparation, une recette et une réouverture explicitement autorisées sont nécessaires ; la simple reprise de santé ne suffit pas.
 
 ## Erreurs de stockage
 

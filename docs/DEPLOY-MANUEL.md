@@ -46,6 +46,6 @@ Après autorisation VPS, installer les accès dédiés et tester la commande for
 
 Le rollback ne restaure jamais un store, une session, un média, un secret ou une ancienne configuration par-dessus l'état courant. Un verrou métier ou une erreur de transaction demande un diagnostic explicite, pas un déverrouillage automatique.
 
-Après redémarrage du VPS, /run reste éphémère et l'absence de gate maintient HTTP 503. Suivre le [Runbook](OPS-RUNBOOK.md) pour une réouverture contrôlée ; ne jamais ajouter un touch inconditionnel au boot.
+Après redémarrage du VPS, /run reste éphémère et l'absence de gate maintient HTTP 503. La restauration vérifiée après arrêt normal est préparée dans [REDEMARRAGE.md](REDEMARRAGE.md), avec installation opérateur distincte des deux fichiers root. Deploy reste manuel et ne les installe jamais implicitement.
 
 Références : [environnements et protection GitHub](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments).

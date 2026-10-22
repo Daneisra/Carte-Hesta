@@ -1,0 +1,26 @@
+[Unit]
+Description=Carte Hesta verified public gate after clean restart
+Wants=pm2-cartehesta.service nginx.service
+After=network.target pm2-cartehesta.service nginx.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/python3 -I -B /usr/local/libexec/cartehesta/boot-public.py restore
+ExecStop=/usr/bin/python3 -I -B /usr/local/libexec/cartehesta/boot-public.py capture
+TimeoutStartSec=90
+TimeoutStopSec=90
+StateDirectory=cartehesta-boot
+StateDirectoryMode=0700
+RuntimeDirectory=cartehesta-gates
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/cartehesta-boot /run/cartehesta-gates /run/lock
+
+[Install]
+WantedBy=multi-user.target
