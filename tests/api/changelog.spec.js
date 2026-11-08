@@ -4,6 +4,21 @@ const { CHANGELOG } = require('../../js/shared/changelog.mjs');
 const adminHeaders = { Authorization: 'Bearer synthetic-admin-token' };
 
 test.describe('Changelog - API et administration', () => {
+    test('les nouvelles variantes trop longues reçoivent HTTP 400 sans modifier la configuration', async ({ request }) => {
+        const before = (await (await request.get('/api/admin/home-config', { headers: adminHeaders })).json()).config;
+        for (const [entry, code] of [
+            [{ date: '2026-01-01', title: 'X'.repeat(201), summary: 'Résumé synthétique' }, 'E_CHANGELOG_TITLE_TOO_LONG'],
+            [{ date: '2026-01-01', title: 'Titre synthétique', summary: 'X'.repeat(4001) }, 'E_CHANGELOG_SUMMARY_TOO_LONG'],
+            [{ ...before.changelog[0], title: 'Y'.repeat(201) }, 'E_CHANGELOG_TITLE_TOO_LONG'],
+            [{ ...before.changelog[0], summary: 'Y'.repeat(4001) }, 'E_CHANGELOG_SUMMARY_TOO_LONG']
+        ]) {
+            const response = await request.patch('/api/admin/home-config', { headers: adminHeaders,
+                data: { config: { home: { title: 'Ne doit pas être enregistré' }, changelog: [...before.changelog, entry] } } });
+            expect(response.status()).toBe(400);
+            expect((await response.json()).code).toBe(code);
+            expect((await (await request.get('/api/admin/home-config', { headers: adminHeaders })).json()).config).toEqual(before);
+        }
+    });
     test('version du code et notes canoniques malgré une ancienne configuration', async ({ request }) => {
         const config = await (await request.get('/assets/site-config.json')).json();
         expect(config.version).toBe(APP_VERSION);

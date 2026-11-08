@@ -2,6 +2,8 @@ const { test, expect, loginAsSyntheticAdmin } = require('../support/playwright.c
 const { representativeSiteConfig, correctedNote } = require('../fixtures/changelog.cjs');
 const { version: APP_VERSION } = require('../../package.json');
 const { CHANGELOG } = require('../../js/shared/changelog.mjs');
+const { observeHomeConfig } = require('../support/homeConfigDiagnostics.cjs');
+const { formatAdminSiteConfigChangelog } = require('../../js/ui/adminHome.js');
 
 test.describe('Versioning et repli du changelog - UI', () => {
     test('le repli affiche uniquement la dernière correction de 0.17.48 et conserve les notes non numérotées', async ({ page }) => {
@@ -20,20 +22,34 @@ test.describe('Versioning et repli du changelog - UI', () => {
         await expect(page.locator('#home-changelog-list')).toContainText(corrected.summary);
     });
 
-    test('l’administration montre le rejet explicite des nouveaux textes trop longs sans sauvegarder', async ({ page }) => {
+    test('l’administration montre le rejet explicite des nouveaux textes trop longs sans sauvegarder', async ({ page }, testInfo) => {
         await loginAsSyntheticAdmin(page);
-        const before = (await (await page.request.get('/api/admin/home-config')).json()).config;
-        await page.goto('/');
-        await page.locator('#home-admin-entry').click();
-        const editor = page.locator('#admin-home-changelog');
-        await expect(editor).not.toHaveValue('');
-        const previous = await editor.inputValue();
-        await editor.fill(previous + '\n2026-01-01 | ' + 'X'.repeat(201) + ' | Résumé synthétique');
-        const response = page.waitForResponse(response => response.url().endsWith('/api/admin/home-config') && response.request().method() === 'PATCH');
-        await page.locator('#admin-home-save').click();
-        expect((await response).status()).toBe(400);
-        await expect(page.locator('#admin-home-status')).toContainText('dépasse 200 caractères');
-        expect((await (await page.request.get('/api/admin/home-config')).json()).config.changelog).toEqual(before.changelog);
+        const diagnostics = await observeHomeConfig(page, testInfo);
+        try {
+            const before = (await (await page.request.get('/api/admin/home-config')).json()).config;
+            diagnostics.record('before-config', before);
+            await page.goto('/');
+            await page.locator('#home-admin-entry').click();
+            const editor = page.locator('#admin-home-changelog');
+            await expect(editor).toHaveValue(formatAdminSiteConfigChangelog(before.changelog));
+            const note = { date: '2026-01-01', title: 'X'.repeat(201), summary: 'Résumé synthétique' };
+            const draft = await editor.inputValue() + `\n${note.date} | ${note.title} | ${note.summary}`;
+            await editor.fill(draft);
+            await expect(editor).toHaveValue(draft);
+            await diagnostics.snapshot('before-save');
+            const sent = page.waitForRequest(request => request.url() === new URL('/api/admin/home-config', page.url()).href && request.method() === 'PATCH');
+            await page.locator('#admin-home-save').click();
+            const request = await sent;
+            expect(request.postDataJSON().config.changelog).toContainEqual(note);
+            expect([...request.postDataJSON().config.changelog.at(-1).title]).toHaveLength(201);
+            const response = await request.response();
+            expect(response.request()).toBe(request);
+            expect(response.status()).toBe(400);
+            expect((await response.json()).code).toBe('E_CHANGELOG_TITLE_TOO_LONG');
+            await expect(page.locator('#admin-home-status')).toContainText('dépasse 200 caractères');
+            await expect(editor).toHaveValue(draft);
+            expect((await (await page.request.get('/api/admin/home-config')).json()).config.changelog).toEqual(before.changelog);
+        } finally { await diagnostics.finish(); }
     });
 
     for (const path of ['/', '/changelog/', '/planning/', '/geek-unchained/']) {

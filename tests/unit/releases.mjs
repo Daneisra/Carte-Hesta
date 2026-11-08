@@ -4,7 +4,7 @@ import { CHANGELOG } from '../../js/shared/changelog.mjs';
 import { mergeChangelog, normalizeEntries, entryVersion } from '../../js/shared/changelogData.mjs';
 import { loadChangelog } from '../../js/shared/changelogClient.mjs';
 import { APP_VERSION } from '../../js/shared/appVersion.mjs';
-import { normalizeAdminSiteConfig, parseAdminChangelog, formatAdminSiteConfigChangelog, validateAdminSiteConfigDraft } from '../../js/ui/adminHome.js';
+import { normalizeAdminSiteConfig, parseAdminChangelog, formatAdminSiteConfigChangelog, validateAdminSiteConfigDraft, fetchAdminSiteConfig, markAdminSiteConfigDirty, renderAdminSiteConfig, setAdminHomeStatus } from '../../js/ui/adminHome.js';
 const require = createRequire(import.meta.url);
 const { validateRelease } = require('../../tools/checkRelease');
 const { applyConfigPatch, appendChangelog } = require('../../server/siteConfigHistory');
@@ -12,7 +12,112 @@ const { representativeSiteConfig, correctedNote, draftNote } = require('../fixtu
 const pkg = require('../../package.json'), lock = require('../../package-lock.json');
 const reply = payload => ({ ok: true, json: async () => payload });
 const fail = () => { throw Error('API indisponible'); };
+const deferred = () => {
+    let resolve;
+    const promise = new Promise(done => { resolve = done; });
+    return { promise, resolve };
+};
+const editorContext = () => {
+    const classes = new Set();
+    const ctx = { isAdmin: () => true, adminSiteConfig: normalizeAdminSiteConfig(representativeSiteConfig()),
+        adminSiteConfigSource: 'api', adminSiteConfigDirty: false, logTelemetryEvent() {},
+        adminDom: { homeSaveButton: {}, homeChangelog: { value: '' }, homeStatus: { classList: {
+            remove(name) { classes.delete(name); },
+            toggle(name, enabled) { if (enabled) classes.add(name); else classes.delete(name); },
+            contains(name) { return classes.has(name); }
+        } } } };
+    renderAdminSiteConfig(ctx);
+    return ctx;
+};
 export const releaseTests = [
+    { name: 'late reads preserve save error, pending and success statuses as well as the draft', async run() {
+        const previousFetch = globalThis.fetch;
+        try {
+            for (const [pendingSave, message, editAfterRead] of [
+                [false, 'HTTP 400 : titre trop long', true], [true, 'Enregistrement en cours', true], [false, 'Enregistrement réussi', true],
+                [false, 'HTTP 400 : titre trop long', false], [true, 'Enregistrement en cours', false]
+            ]) {
+                const ctx = editorContext(), pending = deferred();
+                globalThis.fetch = () => pending.promise;
+                const edit = () => {
+                    ctx.adminDom.homeChangelog.value = '2026-01-01 | Brouillon récent | Conservé';
+                    markAdminSiteConfigDirty(ctx);
+                };
+                if (!editAfterRead) edit();
+                const loading = fetchAdminSiteConfig(ctx);
+                if (editAfterRead) edit();
+                ctx.adminSiteConfigPending = pendingSave;
+                setAdminHomeStatus(ctx, message, message.startsWith('HTTP 400'));
+                pending.resolve(reply({ config: { changelog: [{ title: 'Ancienne lecture' }] } }));
+                await loading;
+                assert.equal(ctx.adminDom.homeChangelog.value, '2026-01-01 | Brouillon récent | Conservé');
+                assert.equal(ctx.adminDom.homeStatus.textContent, message);
+                assert.equal(ctx.adminSiteConfigPending, pendingSave);
+                assert.equal(ctx.adminSiteConfigDirty, true);
+                if (message.startsWith('HTTP 400')) assert(ctx.adminDom.homeStatus.classList.contains('is-error'));
+            }
+        } finally { globalThis.fetch = previousFetch; }
+    } },
+    { name: 'late admin reads preserve edits even after a save cleared the dirty flag', async run() {
+        const previousFetch = globalThis.fetch;
+        try {
+            for (const [dirtyAfterEdit, readOk] of [[true, true], [false, true], [true, false]]) {
+                const ctx = editorContext(), pending = deferred();
+                const original = ctx.adminSiteConfig;
+                globalThis.fetch = () => pending.promise;
+                const loading = fetchAdminSiteConfig(ctx);
+                const draft = ctx.adminDom.homeChangelog.value + '\n2026-01-01 | Saisie récente | Conservée';
+                ctx.adminDom.homeChangelog.value = draft;
+                markAdminSiteConfigDirty(ctx);
+                ctx.adminSiteConfigDirty = dirtyAfterEdit;
+                pending.resolve(readOk ? reply({ config: { changelog: [{ title: 'Réponse ancienne' }] } }) : { ok: false, status: 503 });
+                await loading;
+                assert.equal(ctx.adminDom.homeChangelog.value, draft);
+                assert.equal(ctx.adminSiteConfig, original);
+                assert.equal(ctx.adminSiteConfigDirty, dirtyAfterEdit);
+                assert.match(ctx.adminDom.homeStatus.textContent, /modifications plus récentes/);
+            }
+        } finally { globalThis.fetch = previousFetch; }
+    } },
+    { name: 'fallback admin reads preserve edits made while the fallback is in flight', async run() {
+        const previousFetch = globalThis.fetch;
+        try {
+            for (const fallbackOk of [true, false]) {
+                const ctx = editorContext(), pending = deferred(), entered = deferred();
+                const original = ctx.adminSiteConfig;
+                globalThis.fetch = async url => {
+                    if (url === '/api/admin/home-config') return { ok: false, status: 503 };
+                    assert.equal(url, '/assets/site-config.json'); entered.resolve(); return pending.promise;
+                };
+                const loading = fetchAdminSiteConfig(ctx);
+                await entered.promise;
+                ctx.adminDom.homeChangelog.value = '2026-01-01 | Brouillon récent | Conservé';
+                markAdminSiteConfigDirty(ctx);
+                pending.resolve(fallbackOk ? reply({ changelog: [{ title: 'Ancien repli' }] }) : { ok: false, status: 503 });
+                await loading;
+                assert.equal(ctx.adminDom.homeChangelog.value, '2026-01-01 | Brouillon récent | Conservé');
+                assert.equal(ctx.adminSiteConfig, original);
+                assert.equal(ctx.adminSiteConfigSource, 'api');
+                assert.equal(ctx.adminSiteConfigDirty, true);
+            }
+        } finally { globalThis.fetch = previousFetch; }
+    } },
+    { name: 'admin reads without intervening edits still populate the form', async run() {
+        const previousFetch = globalThis.fetch;
+        try {
+            for (const editBeforeReload of [false, true]) {
+                const ctx = editorContext();
+                if (editBeforeReload) {
+                    ctx.adminDom.homeChangelog.value = '2026-01-01 | Ancienne saisie | À recharger';
+                    markAdminSiteConfigDirty(ctx);
+                }
+                globalThis.fetch = async () => reply({ config: { changelog: [{ title: 'Nouvelle lecture', summary: 'Acceptée' }] } });
+                await fetchAdminSiteConfig(ctx);
+                assert.equal(ctx.adminDom.homeChangelog.value, '| Nouvelle lecture | Acceptée');
+                assert.equal(ctx.adminSiteConfigDirty, false);
+            }
+        } finally { globalThis.fetch = previousFetch; }
+    } },
     { name: 'release gate rejects version/lock mismatch, missing or future notes and lost history', run() {
         assert.equal(validateRelease(pkg, lock, CHANGELOG).version, pkg.version);
         assert.equal(APP_VERSION, pkg.version);
