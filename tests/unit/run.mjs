@@ -1,5 +1,7 @@
 import { extractYoutubeId } from '../../js/ui/youtube.mjs';
 import assert from 'node:assert/strict';
+import { releaseTests } from './releases.mjs';
+import { mediaVisibilityTests } from './mediaVisibility.mjs';
 import { createRequire } from 'node:module';
 import { renderMarkdown } from '../../js/ui/markdown.mjs';
 import {
@@ -34,6 +36,8 @@ const {
 } = require('../../server/utils/assetsArchive');
 
 const tests = [
+    ...releaseTests,
+    ...mediaVisibilityTests,
     {
         name: 'YouTube IDs use exact trusted hosts and complete video IDs',
         run: () => {

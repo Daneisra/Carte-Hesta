@@ -159,7 +159,8 @@ const buildMarkup = () => `
                             <input id="admin-home-credits-url" type="text" placeholder="/docs/ASSETS-CREDITS.md" autocomplete="off" />
                             <label for="admin-home-footer-note">Note footer</label>
                             <textarea id="admin-home-footer-note" rows="4"></textarea>
-                            <label for="admin-home-changelog">Patch notes (Date | Titre | Resume)</label>
+                            <label for="admin-home-changelog">Notes complémentaires (Date | Titre | Résumé)</label>
+                            <p>Les notes produit viennent du code. Toutes les variantes restent conservées ; seule la dernière variante d’une version est publique. Retirer une ligne ne supprime pas l’historique. Nouveaux textes : titre de 200 caractères maximum, résumé de 4 000 caractères maximum.</p>
                             <textarea id="admin-home-changelog" rows="8" placeholder="2026-02-28 | Accueil pre-carte en ligne | Nouvelle page d'accueil..."></textarea>
                         </fieldset>
                     </div>

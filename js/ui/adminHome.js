@@ -1,3 +1,4 @@
+import { APP_VERSION } from '../shared/appVersion.mjs';
 import { sanitizeString } from '../shared/locationSchema.mjs';
 import {
     setPanelStatus,
@@ -68,7 +69,7 @@ export const normalizeAdminSiteConfig = (config = {}) => {
         ? home.tags.map(tag => sanitizeString(tag)).filter(Boolean)
         : ['Carte narrative', 'Quetes live', 'Groupes JDR', 'Profils & personnages'];
     return {
-        version: sanitizeString(config?.version || '0.17.49'),
+        version: APP_VERSION,
         home: {
             kicker: sanitizeString(home.kicker || 'Accueil - Hub narratif'),
             title: sanitizeString(home.title || "Entrez dans l'univers avant d'ouvrir la carte"),
@@ -317,7 +318,7 @@ export const renderAdminSiteConfig = ctx => {
 };
 
 export const collectAdminSiteConfigDraft = ctx => normalizeAdminSiteConfig({
-    version: ctx.adminSiteConfig?.version || '0.17.49',
+    version: APP_VERSION,
     home: {
         kicker: ctx.adminDom.homeKicker?.value || '',
         title: ctx.adminDom.homeTitle?.value || '',
@@ -421,9 +422,6 @@ export const validateAdminSiteConfigDraft = config => {
     if (config?.legal?.creditsUrl && !(isHttp(config.legal.creditsUrl) || isRelative(config.legal.creditsUrl))) {
         errors.push('URL credits invalide (http(s) ou chemin relatif attendu).');
     }
-    if (!Array.isArray(config?.changelog) || !config.changelog.length) {
-        errors.push('Ajoutez au moins une patch note.');
-    }
     return errors;
 };
 
@@ -520,7 +518,8 @@ export const saveAdminSiteConfig = async ctx => {
             body: JSON.stringify({ config: draft })
         });
         if (!response.ok) {
-            const error = new Error(`HTTP ${response.status}`);
+            const details = await response.json().catch(() => null);
+            const error = new Error(details?.message || `HTTP ${response.status}`);
             error.status = response.status;
             throw error;
         }
@@ -533,7 +532,7 @@ export const saveAdminSiteConfig = async ctx => {
         ctx.announcer?.polite?.("Configuration de l'accueil enregistree.");
     } catch (error) {
         console.error('[admin] site config save failed', error);
-        setAdminHomeStatus(ctx, "Impossible d'enregistrer l'accueil.", true);
+        setAdminHomeStatus(ctx, error.status === 400 ? error.message : "Impossible d'enregistrer l'accueil.", true);
         ctx.logTelemetryEvent({
             title: 'Admin accueil - sauvegarde',
             description: error?.message || "Echec sauvegarde configuration d'accueil",

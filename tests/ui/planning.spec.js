@@ -1,3 +1,4 @@
+const { version: APP_VERSION } = require('../../package.json');
 const { test, expect } = require('../support/playwright.cjs');
 
 test.describe('Planning - UI', () => {
@@ -7,8 +8,8 @@ test.describe('Planning - UI', () => {
 
     await expect(page.locator('.planning-nav a[aria-current="page"]')).toHaveText('Planning');
     await expect(page.locator('#planning-title')).toContainText('Trouver une date');
-    await expect(page.locator('#planning-version')).toHaveText('0.17.49');
-    await expect(page.locator('#planning-version-footer')).toHaveText('0.17.49');
+    await expect(page.locator('#planning-version')).toHaveText(APP_VERSION);
+    await expect(page.locator('#planning-version-footer')).toHaveText(APP_VERSION);
     await expect(page.locator('#planning-agenda-title')).toHaveText('Sessions candidates');
     await expect(page.locator('#planning-dated-title')).toHaveText("Mes disponibilites dans l'agenda");
     await expect(page.locator('.planning-agenda-day')).toHaveCount(42);

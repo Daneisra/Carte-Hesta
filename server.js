@@ -6,6 +6,9 @@ const path = require('path');
 const crypto = require('crypto');
 const { URL, pathToFileURL } = require('url');
 const logger = require('./server/utils/logger');
+const { version: APP_VERSION } = require('./package.json');
+const { CHANGELOG } = require('./js/shared/changelog.mjs');
+const { applyConfigPatch, ChangelogValidationError } = require('./server/siteConfigHistory');
 const { withFileLock } = require('./server/utils/fileLock');
 
 const createRouter = require('./server/routes');
@@ -48,7 +51,7 @@ const AVAILABILITY_STATUS = {
   BUSY: 'busy'
 };
 const DEFAULT_SITE_CONFIG = {
-  version: '0.17.49',
+  version: APP_VERSION,
   home: {
     kicker: 'Accueil - Hub narratif',
     title: "Entrez dans l'univers avant d'ouvrir la carte",
@@ -103,248 +106,7 @@ const DEFAULT_SITE_CONFIG = {
     creditsUrl: '/docs/ASSETS-CREDITS.md',
     footerNote: "Projet narratif / JDR - fan project / page d'accueil officielle."
   },
-  changelog: [
-    {
-      date: '2026-09-25',
-      title: 'Version 0.17.49 - Acces au systeme PA',
-      summary: 'L accueil propose un lien direct vers l outil Systeme PA / Armures d100 dans la navigation principale.'
-    },
-    {
-      date: '2026-06-01',
-      title: 'Version 0.17.48 - Page Geek Unchained',
-      summary: 'Une page publique dediee a la Geek Unchained presente Le Monde d Hesta, ses tables JDR, la carte interactive et les infos pratiques de convention.'
-    },
-    {
-      date: '2026-05-26',
-      title: 'Version 0.17.47 - Admin groupes et tests API',
-      summary: 'L admin carte permet de mettre a jour tous les groupes JDR en une action et les tests API partageant des fichiers persistants sont serialises.'
-    },
-    {
-      date: '2026-05-26',
-      title: 'Version 0.17.46 - Publication version et changelog',
-      summary: 'La configuration servie aligne les versions affichees et publie correctement les patch notes du planning multi-date sur l accueil et le changelog.'
-    },
-    {
-      date: '2026-05-26',
-      title: 'Version 0.17.45 - Planning multi-date',
-      summary: 'Les joueurs et admins peuvent enregistrer plusieurs dates en une fois ; les syntheses hebdomadaires obsoletes ont ete retirees du planning et de l admin carte.'
-    },
-    {
-      date: '2026-05-20',
-      title: 'Version 0.17.44 - Planning date et sessions',
-      summary: 'Le planning permet de cliquer une date pour ajouter une disponibilite, retire l ancien affichage semaine type, prolonge la session Discord et harmonise les footers.'
-    },
-    {
-      date: '2026-05-18',
-      title: 'Version 0.17.43 - Admin planning',
-      summary: 'La page planning gagne une interface admin pour creer, modifier et supprimer les sessions candidates directement depuis l agenda.'
-    },
-    {
-      date: '2026-05-18',
-      title: 'Version 0.17.42 - Disponibilites datees planning',
-      summary: 'Le planning permet aux utilisateurs de declarer des disponibilites a une date et une heure precises, avec affichage direct dans l agenda.'
-    },
-    {
-      date: '2026-05-18',
-      title: 'Version 0.17.41 - Conflits agenda planning',
-      summary: 'Chaque session du planning affiche les conflits, le signal de disponibilite hebdomadaire et les meilleurs creneaux possibles.'
-    },
-    {
-      date: '2026-05-18',
-      title: 'Version 0.17.40 - Reponses agenda planning',
-      summary: 'Les sessions du planning peuvent etre creees cote API, modifiees par admin et recevoir les reponses des joueurs par date precise.'
-    },
-    {
-      date: '2026-05-17',
-      title: 'Version 0.17.39 - Agenda planning date',
-      summary: 'Le planning gagne un agenda mensuel date, une API de lecture des sessions candidates et une persistance JSON dediee.'
-    },
-    {
-      date: '2026-05-14',
-      title: 'Version 0.17.38 - Roadmap agenda reel',
-      summary: 'La roadmap distingue le socle de disponibilites du futur rework agenda/calendrier date avec sessions candidates.'
-    },
-    {
-      date: '2026-05-14',
-      title: 'Version 0.17.37 - Vue mois planning',
-      summary: 'Le planning propose une bascule semaine/mois lisible sur desktop et mobile, avec projection des disponibilites sur les prochaines semaines.'
-    },
-    {
-      date: '2026-05-14',
-      title: 'Version 0.17.36 - Statuts planning',
-      summary: 'Les disponibilites du planning gerent maintenant les statuts disponible, incertain, indisponible et non renseigne.'
-    },
-    {
-      date: '2026-05-14',
-      title: 'Version 0.17.35 - Synthese planning',
-      summary: 'Le planning affiche les meilleurs creneaux communs avec une synthese globale et des scopes de groupes JDR quand ils existent.'
-    },
-    {
-      date: '2026-05-14',
-      title: 'Version 0.17.34 - Disponibilites planning',
-      summary: 'La page planning permet aux utilisateurs connectes de cocher leurs disponibilites par jour et creneau puis de les enregistrer dans leur profil.'
-    },
-    {
-      date: '2026-05-14',
-      title: 'Version 0.17.33 - Page planning JDR',
-      summary: 'Une page dediee /planning/ pose le socle UI pour organiser les sessions et preparer les disponibilites des groupes.'
-    },
-    {
-      date: '2026-05-14',
-      title: 'Version 0.17.32 - CI Playwright optimisee',
-      summary: 'La CI utilise npm ci, cache les dependances et navigateurs, separe les projets Playwright et conserve les diagnostics en echec.'
-    },
-    {
-      date: '2026-05-13',
-      title: 'Version 0.17.31 - Encodage UTF-8 verrouille',
-      summary: 'Les conventions d encodage sont explicites via EditorConfig et le lint UTF-8 controle les fichiers texte du projet.'
-    },
-    {
-      date: '2026-05-13',
-      title: 'Version 0.17.30 - Nettoyage legacy tests',
-      summary: 'L ancien placeholder de test unitaire est retire, les compatibilites serveur utiles restent couvertes.'
-    },
-    {
-      date: '2026-05-13',
-      title: 'Version 0.17.29 - Annotations modularisees',
-      summary: 'La normalisation des annotations sort de UiController avec tests unitaires dedies.'
-    },
-    {
-      date: '2026-05-13',
-      title: 'Version 0.17.28 - Personnages modularises',
-      summary: 'La normalisation des personnages utilisateur sort de UiController avec tests unitaires dedies.'
-    },
-    {
-      date: '2026-05-13',
-      title: 'Version 0.17.27 - Personnalisation profil modularisee',
-      summary: 'La normalisation du profil utilisateur sort de UiController pour isoler le modele de donnees.'
-    },
-    {
-      date: '2026-05-13',
-      title: 'Version 0.17.26 - Disponibilites modularisees',
-      summary: 'Le modele des disponibilites sort de UiController pour reduire les dependances UI.'
-    },
-    {
-      date: '2026-05-12',
-      title: 'Version 0.17.25 - Patch notes accueil automatises',
-      summary: "L'accueil affiche les dernieres versions depuis l API changelog avec fallback local."
-    },
-    {
-      date: '2026-05-12',
-      title: 'Version 0.17.24 - Changelog produit prioritaire',
-      summary: "La page changelog est accessible depuis la navigation accueil et affiche les versions produit avant l historique Git brut."
-    },
-    {
-      date: '2026-05-12',
-      title: 'Version 0.17.23 - Page changelog dediee',
-      summary: "Une page publique /changelog/ regroupe les versions et changements recents de la carte."
-    },
-    {
-      date: '2026-05-12',
-      title: 'Version 0.17.22 - Compteur Discord fiabilise',
-      summary: "Le compteur Discord de l'accueil affiche un etat live ou un fallback manuel clair quand l API Discord est indisponible."
-    },
-    {
-      date: '2026-05-11',
-      title: 'Version 0.17.21 - Telechargement assets fiabilise',
-      summary: 'La generation d archive assets corrige le fallback tar, harmonise les exclusions et expose la taille de l archive au telechargement.'
-    },
-    {
-      date: '2026-05-11',
-      title: 'Version 0.17.20 - Session Discord prolongee',
-      summary: 'La verification de session renouvelle le cookie Discord actif afin de maintenir la connexion pendant l usage regulier.'
-    },
-    {
-      date: '2026-05-11',
-      title: 'Version 0.17.19 - QA responsive mobile',
-      summary: 'Une suite Playwright dediee verifie les pages publiques et l editeur de lieu sur telephone, avec corrections du formulaire long mobile.'
-    },
-    {
-      date: '2026-05-09',
-      title: 'Version 0.17.18 - Admin mobile consolide',
-      summary: 'Les panneaux admin accueil, chronologie et carte sont mieux adaptes au telephone avec plein ecran, scroll vertical et controles tactiles.'
-    },
-    {
-      date: '2026-05-09',
-      title: 'Version 0.17.17 - CI chronologie Firefox stabilisee',
-      summary: 'La navigation rapide par periode de la chronologie cible le bon groupe de maniere deterministe dans les tests Firefox.'
-    },
-    {
-      date: '2026-05-09',
-      title: 'Version 0.17.16 - Chronologie mobile consolidee',
-      summary: 'La chronologie mobile gagne un header compact, une navigation tactile, des filtres pleine largeur et une lightbox mieux bornee.'
-    },
-    {
-      date: '2026-05-09',
-      title: 'Version 0.17.15 - Accueil mobile consolide',
-      summary: 'L accueil mobile gagne une navigation tactile, des CTA homogenes et des blocs de soutien lisibles sans debordement horizontal.'
-    },
-    {
-      date: '2026-05-09',
-      title: 'Version 0.17.14 - Premiere tranche mobile carte',
-      summary: 'La carte gagne une barre d outils mobile compacte, un flux temps reel mieux place et un panneau lieu prioritaire sur telephone.'
-    },
-    {
-      date: '2026-05-09',
-      title: 'Version 0.17.13 - Suppression annotations persistante',
-      summary: 'La suppression des annotations cible correctement l id serveur, persiste le JSON et synchronise la carte en temps reel.'
-    },
-    {
-      date: '2026-05-08',
-      title: 'Version 0.17.12 - Detail chronologie elargi',
-      summary: 'Le detail des evenements de chronologie utilise mieux la largeur du panneau apres l ajout de l agrandissement d image.'
-    },
-    {
-      date: '2026-05-07',
-      title: 'Version 0.17.11 - Images chronologie agrandies',
-      summary: 'Les images de detail de la frise peuvent etre ouvertes en grand dans une modale plein ecran accessible.'
-    },
-    {
-      date: '2026-05-07',
-      title: 'Version 0.17.10 - Fix theme clair carte',
-      summary: 'Le bouton theme clair de la barre d outil reapplique correctement le theme, son etat accessible et la preference locale.'
-    },
-    {
-      date: '2026-05-06',
-      title: 'Version 0.17.9 - Reordre des blocs narratifs',
-      summary: 'L editeur de lieux permet de reordonner lore, historique, quetes et sections longues par glisser-deposer ou boutons accessibles.'
-    },
-    {
-      date: '2026-05-06',
-      title: 'Version 0.17.8 - Peinture ephemere carte',
-      summary: 'Un outil local permet de tracer puis effacer des schemas temporaires sur la carte sans creer d annotation persistante.'
-    },
-    {
-      date: '2026-05-06',
-      title: 'Version 0.17.7 - Navigation libre carte',
-      summary: 'La carte n est plus verrouillee aux bords afin de rendre les lieux proches des limites plus faciles a atteindre et selectionner.'
-    },
-    {
-      date: '2026-05-06',
-      title: 'Version 0.17.6 - Polish chronologie',
-      summary: 'La frise gagne en densite, en lisibilite sur les longues periodes et en transitions de lecture.'
-    },
-    {
-      date: '2026-05-06',
-      title: 'Version 0.17.5 - Ordre chronologique public',
-      summary: 'La chronologie publique et les tests UI utilisent desormais le meme ordre d evenements trie par annee.'
-    },
-    {
-      date: '2026-05-06',
-      title: 'Version 0.17.4 - Upload images chronologie',
-      summary: 'L admin chronologie permet d uploader directement une image d evenement et de remplir automatiquement l URL media.'
-    },
-    {
-      date: '2026-05-06',
-      title: 'Version 0.17.3 - Documentation projet',
-      summary: 'Documentation restructuree, version projet alignee et preparation d un suivi version/changelog a chaque commit.'
-    },
-    {
-      date: '2026-02-28',
-      title: 'Nouvel accueil en ligne',
-      summary: "Nouvelle page d'accueil avec session, communaute, flux live, lieux mis en avant et patch notes."
-    }
-  ]
+  changelog: CHANGELOG
 };
 const DEFAULT_TIMELINE = {
   title: "Chronologie d'Hesta",
@@ -904,15 +666,6 @@ const sanitizeSiteConfigText = (value, maxLength = 1200) => {
   return normalized.slice(0, maxLength);
 };
 
-const sanitizeSiteConfigDate = value => {
-  const normalized = normalizeString(value);
-  if (!normalized) {
-    return '';
-  }
-  const parsed = Date.parse(normalized);
-  return Number.isFinite(parsed) ? new Date(parsed).toISOString().slice(0, 10) : normalized.slice(0, 32);
-};
-
 const sanitizeSiteConfigUrl = (value, { allowRelative = false } = {}) => {
   const normalized = normalizeString(value);
   if (!normalized) {
@@ -940,11 +693,6 @@ const sanitizeSiteConfigMode = value => {
   return normalized === 'discord' ? 'discord' : 'manual';
 };
 
-const sanitizeProjectVersion = value => {
-  const normalized = normalizeString(value);
-  return /^\d+\.\d+\.\d+$/u.test(normalized) ? normalized : '';
-};
-
 const sanitizeSiteConfigMetric = value => {
   if (!value || typeof value !== 'object') {
     return null;
@@ -955,23 +703,6 @@ const sanitizeSiteConfigMetric = value => {
     return null;
   }
   return { label, value: metricValue };
-};
-
-const sanitizeSiteConfigChangelogEntry = value => {
-  if (!value || typeof value !== 'object') {
-    return null;
-  }
-  const date = sanitizeSiteConfigDate(value.date);
-  const title = sanitizeSiteConfigText(value.title, 120);
-  const summary = sanitizeSiteConfigText(value.summary, 400);
-  if (!date && !title && !summary) {
-    return null;
-  }
-  return {
-    date: date || '',
-    title: title || 'Mise a jour',
-    summary: summary || ''
-  };
 };
 
 const sanitizeTimelineText = (value, maxLength = 1200) => sanitizeSiteConfigText(value, maxLength);
@@ -1127,11 +858,11 @@ const sanitizeSiteConfig = value => {
   };
 
   const changelog = Array.isArray(source.changelog)
-    ? source.changelog.map(sanitizeSiteConfigChangelogEntry).filter(Boolean).slice(0, 12)
-    : defaults.changelog;
+    ? source.changelog
+    : [];
 
   return {
-    version: sanitizeProjectVersion(source.version) || defaults.version,
+    version: APP_VERSION,
     home: {
       kicker: sanitizeSiteConfigText(homeSource.kicker, 80) || defaults.home.kicker,
       title: sanitizeSiteConfigText(homeSource.title, 180) || defaults.home.title,
@@ -1164,14 +895,19 @@ const sanitizeSiteConfig = value => {
       creditsUrl: sanitizeSiteConfigUrl(legalSource.creditsUrl, { allowRelative: true }) || defaults.legal.creditsUrl,
       footerNote: sanitizeSiteConfigText(legalSource.footerNote, 240) || defaults.legal.footerNote
     },
-    changelog: changelog.length ? changelog : defaults.changelog
+    changelog
   };
 };
 
 const readSiteConfigFile = async () => sanitizeSiteConfig(await readJsonFile(SITE_CONFIG_FILE, DEFAULT_SITE_CONFIG));
-const writeSiteConfigFile = async config => {
-  validate('site-config', config);
-  await writeJsonFile(SITE_CONFIG_FILE, sanitizeSiteConfig(config));
+const writeSiteConfigFile = async submitted => {
+  validate('site-config', submitted);
+  return storage.transaction(async () => {
+    const existing = await storage.read('site-config');
+    const next = applyConfigPatch(existing, submitted, sanitizeSiteConfig(submitted));
+    await storage.write('site-config', next);
+    return sanitizeSiteConfig(next);
+  });
 };
 
 const resolveAssetPath = relative => {
@@ -2530,9 +2266,14 @@ const handleRequest = async (req, res) => {
         send(res, 405, JSON.stringify({ status: 'error', message: 'Method Not Allowed' }), { 'Content-Type': 'application/json', 'Allow': 'GET' });
         return;
       }
-      const limit = Math.max(1, Math.min(50, Number(urlObj.searchParams.get('limit')) || 6));
+      const requestedLimit = Number(urlObj.searchParams.get('limit'));
+      const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(50, Math.floor(requestedLimit) || 6)) : 6;
+      const requestedOffset = Number(urlObj.searchParams.get('offset'));
+      const offset = Number.isFinite(requestedOffset) ? Math.max(0, Math.floor(requestedOffset)) : 0;
       const config = publicSiteConfig(await storage.read('site-config'));
-      json(res, 200, { status: 'ok', source: 'config', entries: (config.changelog || []).slice(0, limit) });
+      const entries = config.changelog.slice(offset, offset + limit);
+      const hasMore = offset + entries.length < config.changelog.length;
+      json(res, 200, { status: 'ok', version: APP_VERSION, source: 'code+config', entries, total: config.changelog.length, offset, hasMore, nextOffset: hasMore ? offset + entries.length : null });
       return;
     }
 
@@ -2817,8 +2558,14 @@ const handleRequest = async (req, res) => {
           send(res, 400, 'Invalid JSON');
           return;
         }
-        const nextConfig = sanitizeSiteConfig(payload?.config && typeof payload.config === 'object' ? payload.config : payload);
-        await writeSiteConfigFile(nextConfig);
+        let nextConfig;
+        try {
+          nextConfig = await writeSiteConfigFile(payload?.config && typeof payload.config === 'object' ? payload.config : payload);
+        } catch (error) {
+          if (!(error instanceof ChangelogValidationError)) throw error;
+          json(res, 400, { status: 'error', code: error.code, message: error.message });
+          return;
+        }
         send(res, 200, JSON.stringify({ status: 'ok', config: nextConfig }), { 'Content-Type': 'application/json' });
         return;
       }

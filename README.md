@@ -45,6 +45,7 @@ Voir [Contribution](docs/CONTRIBUTING.md) pour toutes les suites, dont Chromium 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Versions, changelog et publication](docs/VERSIONING.md)
 - [Stockage et permissions](docs/DATA-MANAGEMENT.md)
 - [Authentification Discord](docs/OAUTH-DISCORD.md)
 - [Déploiement](docs/DEPLOYMENT-VPS.md) et [transport contrôlé](docs/DEPLOY-MANUEL.md)

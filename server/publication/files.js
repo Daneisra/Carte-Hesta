@@ -7,6 +7,10 @@ const { TYPES, MAX_BYTES } = require('./mediaTypes');
 const { MAX_STREAM_BYTES, validateStreamEntry } = require('./stream');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.mjs': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.md': 'text/plain; charset=utf-8' };
 const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+function versionModule(version) {
+    if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Invalid application version');
+    return Buffer.from(`// Generated from package.json by buildPublic.\nexport const APP_VERSION = ${JSON.stringify(version)};\n`);
+}
 function relativePath(relative) {
     if (typeof relative !== 'string' || !relative || relative.includes('\\') || relative.includes('%') || relative.includes(':') || /[\x00-\x1f\x7f?#]/.test(relative) || path.posix.isAbsolute(relative)) throw new Error('Invalid public relative path');
     if (relative.split('/').some(part => !part || part.startsWith('.') || /[<>"|*]/.test(part))) throw new Error('Invalid public path segment');
@@ -82,8 +86,17 @@ function buildPublic(source, destination) {
     plainPath(source); plainPath(destination);
     fs.mkdirSync(destination); // exclusive: never merge into an existing artifact
     const entries = Object.create(null);
+    const { version } = JSON.parse(readPlain(path.join(source, 'package.json')));
+    if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Invalid application version');
     for (const relative of STATIC_FILES) {
-        const bytes = readPlain(resolved(source, relative));
+        let bytes = relative === 'js/shared/appVersion.mjs'
+            ? versionModule(version)
+            : readPlain(resolved(source, relative));
+        if (relative.endsWith('.html')) {
+            bytes = Buffer.from(bytes.toString('utf8')
+                .replace(/(<(?:span|strong)\b[^>]*\bdata-app-version[^>]*>)[^<]*(<\/(?:span|strong)>)/g, (_match, open, close) => `${open}${version}${close}`)
+                .replace(/(<meta name="application-version" content=")[^"]*("\s*\/?>)/g, (_match, open, close) => `${open}${version}${close}`));
+        }
         const target = resolved(destination, relative);
         fs.mkdirSync(path.dirname(target), { recursive: true });
         fs.writeFileSync(target, bytes, { flag: 'wx', mode: 0o644 });
@@ -92,4 +105,4 @@ function buildPublic(source, destination) {
     fs.writeFileSync(path.join(destination, '.public-manifest.json'), JSON.stringify({ version: 1, entries }, null, 2), { flag: 'wx', mode: 0o600 });
     return { version: 1, entries };
 }
-module.exports = { STATIC_FILES, MIME, digest, relativePath, requestPath, mediaPath, resolved, readPlain, metadata, readIndex, verified, buildPublic };
+module.exports = { STATIC_FILES, MIME, digest, versionModule, relativePath, requestPath, mediaPath, resolved, readPlain, metadata, readIndex, verified, buildPublic };

@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/changelog.css">
     <link rel="stylesheet" href="/assets/hesta-identity.css">
     <link rel="icon" type="image/png" href="/assets/logo.png">
+    <meta name="application-version" content="">
 </head>
 <body>
     <a class="changelog-skip-link" href="#changelog-main">Aller au contenu principal</a>
@@ -52,7 +53,7 @@
                 <div class="changelog-hero-meta" aria-label="Resume changelog">
                     <div class="changelog-stat">
                         <span>Version actuelle</span>
-                        <strong id="changelog-version">0.17.49</strong>
+                        <strong id="changelog-version" data-app-version>—</strong>
                     </div>
                     <div class="changelog-stat">
                         <span>Entrees</span>
@@ -82,7 +83,7 @@
         <footer class="changelog-footer site-footer">
             <div class="site-footer-left">
                 <p>&copy; <span id="changelog-year"></span> Carte Hesta. Tous droits reserves.</p>
-                <p class="site-footer-version">Version <span id="changelog-version-footer">0.17.49</span></p>
+                <p class="site-footer-version">Version <span id="changelog-version-footer" data-app-version>—</span></p>
                 <p class="site-footer-note">Projet narratif / JDR - fan project / historique des versions.</p>
             </div>
             <nav class="site-footer-links" aria-label="Liens secondaires">
@@ -97,5 +98,6 @@
     </div>
 
     <script type="module" src="/js/changelog.js"></script>
+    <script type="module" src="/js/version.js"></script>
 </body>
 </html>

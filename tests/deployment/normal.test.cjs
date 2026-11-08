@@ -13,7 +13,8 @@ function sample() {
             'Strict index gate (legacy debt must be removed before CI can pass)', 'Encoding and isolated unit/storage/publication suites',
             'Isolation, permissions, offline migration and rollback', 'API with isolation boundary enforcement',
             'Both browsers (Firefox is mandatory)', 'Build and verify a code-only candidate outside the checkout',
-            'Preserve verified code-only candidate for reviewed migration'
+            'Preserve verified code-only candidate for reviewed migration',
+            'Release publication readiness (main and PRs targeting main)'
         ].map(name => ({ name, conclusion: 'success' })) }] },
         artifacts: { total_count: 1, artifacts: [{ id: 3, name: 'cartehesta-code-' + REV, expired: false, size_in_bytes: 100, digest: 'sha256:' + 'b'.repeat(64) }] }
     };
@@ -24,6 +25,8 @@ for (const [name, mutate] of [
     ['manually dispatched CI', s => s.run.event = 'workflow_dispatch'],
     ['API diagnostics', s => s.jobs.jobs[0].name = 'API diagnostics only'],
     ['skipped Firefox', s => s.jobs.jobs[0].steps[4].conclusion = 'skipped'],
+    ['missing publication readiness', s => s.jobs.jobs[0].steps.pop()],
+    ['failed publication readiness', s => s.jobs.jobs[0].steps.at(-1).conclusion = 'failure'],
     ['other repository', s => s.run.head_repository.full_name = 'attacker/Carte-Hesta'],
     ['other workflow', s => s.workflow.path = '.github/workflows/other.yml'],
     ['other revision', s => s.run.head_sha = 'c'.repeat(40)],

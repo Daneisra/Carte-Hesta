@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
 const { categories } = require('./schema');
-const { publicTimeline, publicSiteConfig, publicTypes } = require('../publication/projections');
+const { publicTimeline, publicSiteConfig, siteConfigFields, publicTypes } = require('../publication/projections');
+const { latestVersionEntries } = require('../../js/shared/changelogData.mjs');
 const own = (object, key) => Object.hasOwn(object || {}, key) ? object[key] : undefined;
 const list = (value, key) => Array.isArray(value) ? value : value[key];
 const digest = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -162,23 +163,50 @@ class Access {
             else if (value && typeof value === 'object') Object.values(value).forEach(item => scan(item, allowed));
         };
         const compare = (raw, projected, allowed) => {
-            if (Array.isArray(raw)) raw.forEach((value, index) => compare(value, Array.isArray(projected) ? projected[index] : undefined, allowed));
+            // Les tableaux filtrés/triés ne partagent pas nécessairement leurs indices.
+            // Seules les valeurs réellement conservées (ou l'identité de l'objet) comptent.
+            // Les projections partielles d'objets sont comparées individuellement ci-dessous.
+            if (Array.isArray(raw)) raw.forEach(value => compare(value, Array.isArray(projected) && projected.includes(value) ? value : undefined, allowed));
             else if (raw && typeof raw === 'object') for (const [key, value] of Object.entries(raw)) compare(value, own(projected, key), allowed);
-            else scan(raw, allowed && projected !== undefined);
+            else scan(raw, allowed && raw === projected);
         };
-        for (const [continent, places] of Object.entries(this.locations)) for (const place of places) for (const [field, value] of Object.entries(place)) compare(value, categoryView(field, value), categories.includes(field) && this.locationAllowed(continent, place, field));
+        for (const [continent, places] of Object.entries(this.locations)) for (const place of places) for (const [field, value] of Object.entries(place)) {
+            const allowed = categories.includes(field) && this.locationAllowed(continent, place, field);
+            if (Array.isArray(value)) for (const item of value) compare(item, categoryView(field, [item])[0], allowed);
+            else compare(value, categoryView(field, value), allowed);
+        }
         for (const entry of this.timeline.entries) for (const [field, value] of Object.entries(entry)) compare(value, own(select(entry, ['imageUrl', 'content', 'summary']), field), ['imageUrl', 'content', 'summary'].includes(field) && this.timelineAllowed(entry));
         for (const annotation of this.annotations) compare(annotation, this.annotationView(annotation), !!this.annotationView(annotation));
-        for (const group of this.groups) compare(group, this.groupView(group), !!this.groupView(group));
+        for (const group of this.groups) {
+            const visible = this.groupView(group);
+            // Les membres sont calculés depuis les comptes, jamais depuis group.members.
+            compare(group, visible && select(visible, ['id', 'name', 'color', 'x', 'y']), !!visible);
+        }
         for (const session of this.planning) {
             const visible = this.sessionView(session);
             for (const [field, value] of Object.entries(session)) {
-                if (field === 'responses') for (const [id, response] of Object.entries(value || {})) scan(response, !!visible?.responses && Object.hasOwn(visible.responses, id));
+                if (field === 'responses') for (const [id, response] of Object.entries(value || {})) compare(response, own(visible?.responses, id), !!visible?.responses && Object.hasOwn(visible.responses, id));
                 else compare(value, own(visible, field), !!visible);
             }
         }
         for (const user of this.users) scan(user, this.admin || user.id === this.actor.user?.id);
-        const site = publicSiteConfig(this['site-config']); compare(this['site-config'], site, true);
+        const rawSite = this['site-config'];
+        const site = publicSiteConfig(rawSite);
+        for (const [field, value] of Object.entries(rawSite)) {
+            if (field === 'changelog' && Array.isArray(value)) {
+                const notes = value.map(entry => ({ raw: entry, projected: siteConfigFields({ changelog: [entry] }).changelog[0] }));
+                const visibleNotes = new Set(latestVersionEntries(notes.map(entry => entry.projected)));
+                for (const entry of notes) compare(entry.raw, entry.projected, visibleNotes.has(entry.projected));
+            } else if (field === 'home' && value && typeof value === 'object' && !Array.isArray(value)) {
+                for (const [name, content] of Object.entries(value)) {
+                    if (name === 'metrics' && Array.isArray(content)) {
+                        for (const metric of content) compare(metric, siteConfigFields({ home: { metrics: [metric] } }).home.metrics[0], true);
+                    } else compare(content, own(site.home, name), true);
+                }
+            } else compare(value, own(site, field), true);
+        }
+        // Inclut les notes canoniques ajoutées, sans neutraliser un parent privé déjà recensé.
+        scan(site.changelog, true);
         const types = publicTypes(this.types); compare(this.types, types, true);
         // Compiled interface illustrations have an explicit public parent, never a directory wildcard.
         for (const asset of ['assets/map.png', 'assets/logo.png', 'assets/icons/default.png', 'assets/home/backgrounds/hero-main.png', 'assets/home/mockups/map-preview-main.png', 'assets/home/characters/Chevalier.png', 'assets/home/characters/Bertholo.png', 'assets/home/characters/Alienor.png', 'assets/home/characters/character.png']) scan(asset, true);

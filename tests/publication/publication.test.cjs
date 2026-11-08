@@ -34,6 +34,21 @@ function unzip(bytes) {
     return result;
 }
 
+test('build derives public module, HTML footers and metadata exclusively from package.json', () => {
+    const destination = path.join(directory(), 'public');
+    buildPublic(path.join(root, 'app'), destination);
+    const { version } = require('../../package.json');
+    const module = fs.readFileSync(path.join(destination, 'js/shared/appVersion.mjs'), 'utf8');
+    assert(module.includes(`export const APP_VERSION = ${JSON.stringify(version)};`));
+    for (const page of STATIC_FILES.filter(name => name.endsWith('.html'))) {
+        const html = fs.readFileSync(path.join(destination, page), 'utf8');
+        assert(html.includes(`<meta name="application-version" content="${version}">`), page);
+        for (const match of html.matchAll(/data-app-version>([^<]*)</g)) assert.equal(match[1], version, page);
+        assert(!html.includes('0.17.49'), page);
+    }
+    assert(!fs.existsSync(path.join(destination, 'package.json')));
+});
+
 test('the artifact contains exactly the reviewed code list, excluding planted private files', () => {
     const destination = path.join(directory(), 'public');
     const canary = path.join(root, 'app', 'server-secret.json');

@@ -1,3 +1,4 @@
+const { version: APP_VERSION } = require('../../package.json');
 const { test, expect } = require('../support/playwright.cjs');
 
 test.describe('Changelog - UI', () => {
@@ -27,10 +28,10 @@ test.describe('Changelog - UI', () => {
     await page.waitForLoadState('domcontentloaded');
 
     await expect(page.locator('#changelog-title')).toContainText('Suivre les evolutions');
-    await expect(page.locator('#changelog-version')).toHaveText('0.17.49');
-    await expect(page.locator('#changelog-version-footer')).toHaveText('0.17.49');
+    await expect(page.locator('#changelog-version')).toHaveText(APP_VERSION);
+    await expect(page.locator('#changelog-version-footer')).toHaveText(APP_VERSION);
     await expect(page.locator('#changelog-count')).toHaveText('2');
-    await expect(page.locator('#changelog-source')).toHaveText('Config');
+    await expect(page.locator('#changelog-source')).toHaveText('Code + Config');
     await expect(page.locator('.changelog-entry')).toHaveCount(2);
     await expect(page.locator('.changelog-entry').first()).toContainText('Version 0.17.49 - Acces au systeme PA');
   });

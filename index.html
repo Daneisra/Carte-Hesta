@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="/assets/hesta-identity.css">
     <link rel="stylesheet" href="/admin-panels.css">
     <link rel="icon" type="image/png" href="/assets/logo.png">
+    <meta name="application-version" content="">
 </head>
 <body>
     <a class="home-skip-link" href="#home-main">Aller au contenu principal</a>
@@ -283,7 +284,7 @@
         <footer class="home-footer site-footer">
             <div class="home-footer-left site-footer-left">
                 <p>&copy; <span id="home-year"></span> Carte Hesta. Tous droits reserves.</p>
-                <p class="home-footer-version site-footer-version">Version <span id="home-version">0.17.49</span></p>
+                <p class="home-footer-version site-footer-version">Version <span id="home-version" data-app-version>—</span></p>
                 <p id="home-footer-note" class="home-footer-note site-footer-note">Projet narratif / JDR - fan project / page d'accueil officielle.</p>
             </div>
             <nav class="home-footer-right site-footer-links" aria-label="Liens secondaires">
@@ -301,5 +302,6 @@
 
     <script type="module" src="/js/home.js"></script>
     <script type="module" src="/js/home-admin.js"></script>
+    <script type="module" src="/js/version.js"></script>
 </body>
 </html>

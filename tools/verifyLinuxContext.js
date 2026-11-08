@@ -8,7 +8,7 @@ const { BACKEND, OPS, scan, directories } = require('./deployment/release');
 const STATIC_FILES = require('../server/publication/staticFiles');
 const EXTRA = ['Dockerfile', 'playwright.config.js', '.editorconfig', '.gitattributes', '.gitignore', 'README.md', 'ROADMAP.md',
     '.github/workflows/ci.yml', '.github/workflows/deploy.yml', '.github/scripts/verify-ci-run.cjs', '.github/scripts/transport-deploy.py', 'ops/deploy-code.py', 'ops/receive-deploy.py', 'tools/deployment/legacyTrackedPaths.json',
-    ...['auditTrackedPaths', 'gitCleanupPreflight', 'prepareGitCleanup', 'localBackupManifest', 'verifyLinuxContext', 'runLinuxValidation', 'benchmarkSynthetic', 'lintEncoding', 'runIsolatedTests', 'devServerWithStub', 'diagnoseFirefox', 'prepareFirefoxLinuxContext'].map(n => `tools/${n}.js`)];
+    ...['checkRelease', 'syncVersion', 'auditTrackedPaths', 'gitCleanupPreflight', 'prepareGitCleanup', 'localBackupManifest', 'verifyLinuxContext', 'runLinuxValidation', 'benchmarkSynthetic', 'lintEncoding', 'runIsolatedTests', 'devServerWithStub', 'diagnoseFirefox', 'prepareFirefoxLinuxContext'].map(n => `tools/${n}.js`)];
 // Development-only AST parser already locked with Playwright. Not used by the pre-install
 // structural verifier, and never included in the application release or executed test code.
 function verifyLocalDependencies(root, entries) {

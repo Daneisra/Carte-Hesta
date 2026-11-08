@@ -1,6 +1,6 @@
 {
   "name": "carte-interactive",
-  "version": "0.17.49",
+  "version": "0.17.50",
   "private": true,
   "scripts": {
     "test:ui": "node tools/runIsolatedTests.js",
@@ -12,6 +12,9 @@
     "test:unit": "node tools/runIsolatedTests.js --unit",
     "lint": "npm run lint:encoding",
     "lint:encoding": "node tools/lintEncoding.js",
+    "release:check": "node tools/checkRelease.js",
+    "release:ready": "node tools/checkRelease.js --ready",
+    "version:sync": "node tools/syncVersion.js",
     "build:static": "node tools/buildPublic.js",
     "serve": "node server.js",
     "sync:mock": "node tools/mockRemoteSync.js",
