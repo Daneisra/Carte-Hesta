@@ -17,7 +17,7 @@ test('preparation and publication checks are separate, with no successful main-t
     assert(!preparation.run.includes('--ready'));
     assert.equal(gate.run, 'node tools/checkRelease.js --ready');
     assert(!gate['continue-on-error']);
-    assert(steps.indexOf(gate) > steps.findIndex(step => step.name === 'Both browsers (Firefox is mandatory)'));
+    assert(steps.indexOf(gate) > steps.findIndex(step => step.name === 'Firefox isolated tests without retries'));
     assert(steps.indexOf(gate) < steps.findIndex(step => step.name === 'Build and verify a code-only candidate outside the checkout'));
     const draft = [{ ...CHANGELOG[0], status: 'draft', date: '' }, ...CHANGELOG.slice(1)];
     assert.equal(validateRelease(pkg, lock, draft).status, 'draft');
@@ -33,6 +33,6 @@ for (const [name, event, ref, base, apiOnly, expected] of [
     ['API-only diagnostics', 'workflow_dispatch', 'refs/heads/main', '', true, false]
 ]) test(`publication readiness condition: ${name}`, () => {
     const expression = gate.if.replace(/^\$\{\{\s*|\s*\}\}$/g, '');
-    const result = vm.runInNewContext(expression, { github: { event_name: event, ref, base_ref: base, event: { pull_request: { draft: true } } }, inputs: { api_only: apiOnly } }, { timeout: 1000 });
+    const result = vm.runInNewContext(expression, { cancelled: () => false, steps: { tooling: { outcome: 'success' }, index: { outcome: 'success' } }, github: { event_name: event, ref, base_ref: base, event: { pull_request: { draft: true } } }, inputs: { api_only: apiOnly } }, { timeout: 1000 });
     assert.equal(result, expected);
 });

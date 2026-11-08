@@ -36,11 +36,13 @@ jobs:
         with:
           node-version: '22.23.2'
       - name: Install locked tooling without lifecycle scripts or local npm configuration
+        id: tooling
         run: |
           touch "$NPM_CONFIG_USERCONFIG" "$NPM_CONFIG_GLOBALCONFIG"
           npm ci --ignore-scripts --no-audit --no-fund
           node -e "if(require('playwright/package.json').version!=='1.56.0')process.exit(1)"
       - name: Strict index gate (legacy debt must be removed before CI can pass)
+        id: index
         run: node tools/auditTrackedPaths.js --strict
       - name: Encoding and isolated unit/storage/publication suites
         if: ${{ github.event_name != 'workflow_dispatch' || !inputs.api_only }}
@@ -56,23 +58,57 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends python3 nginx rsync
       - name: Isolation, permissions, offline migration and rollback
+        id: isolation
         if: ${{ github.event_name != 'workflow_dispatch' || !inputs.api_only }}
         run: |
           node --test tests/isolation/*.test.cjs
           node --test tests/deployment/*.test.cjs
       - name: Install fixed browsers (tool installation only)
+        id: browsers
         if: ${{ github.event_name != 'workflow_dispatch' || !inputs.api_only }}
         run: node node_modules/playwright/cli.js install --with-deps chromium firefox
       - name: API with isolation boundary enforcement
-        run: node tools/runIsolatedTests.js --project=api
-      - name: Both browsers (Firefox is mandatory)
-        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.api_only }}
-        run: |
-          node tools/runIsolatedTests.js --project=chromium
-          node tools/runIsolatedTests.js --project=firefox
+        id: api
+        run: node tools/runIsolatedTests.js --project=api --ci-diagnostics
+      - name: Chromium isolated tests
+        id: chromium
+        if: ${{ !cancelled() && steps.browsers.outcome == 'success' && steps.isolation.outcome == 'success' && (github.event_name != 'workflow_dispatch' || !inputs.api_only) }}
+        run: node tools/runIsolatedTests.js --project=chromium --ci-diagnostics
+      - name: Firefox isolated tests without retries
+        id: firefox
+        if: ${{ !cancelled() && steps.browsers.outcome == 'success' && steps.isolation.outcome == 'success' && (github.event_name != 'workflow_dispatch' || !inputs.api_only) }}
+        run: node tools/runIsolatedTests.js --project=firefox --retries=0 --ci-diagnostics
       - name: Release publication readiness (main and PRs targeting main)
-        if: ${{ (github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.base_ref == 'main')) && (github.event_name != 'workflow_dispatch' || !inputs.api_only) }}
+        id: ready
+        if: ${{ !cancelled() && steps.tooling.outcome == 'success' && steps.index.outcome == 'success' && (github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.base_ref == 'main')) && (github.event_name != 'workflow_dispatch' || !inputs.api_only) }}
         run: node tools/checkRelease.js --ready
+      - name: Prepare sanitized synthetic test diagnostics
+        id: diagnostics
+        if: ${{ !cancelled() && (steps.api.outcome == 'success' || steps.api.outcome == 'failure' || steps.chromium.outcome == 'success' || steps.chromium.outcome == 'failure' || steps.firefox.outcome == 'success' || steps.firefox.outcome == 'failure') }}
+        env:
+          DIAGNOSTIC_API_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.api_only }}
+        run: node tools/testDiagnostics.js "$RUNNER_TEMP/cartehesta-test-diagnostics"
+      - name: Preserve synthetic test diagnostics
+        if: ${{ !cancelled() && steps.diagnostics.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cartehesta-tests-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cartehesta-test-diagnostics/
+          if-no-files-found: error
+          retention-days: 2
+          include-hidden-files: false
+      - name: Test and publication outcomes
+        if: ${{ !cancelled() && steps.tooling.outcome == 'success' }}
+        env:
+          API_RESULT: ${{ steps.api.outcome }}
+          CHROMIUM_RESULT: ${{ steps.chromium.outcome }}
+          FIREFOX_RESULT: ${{ steps.firefox.outcome }}
+          READY_RESULT: ${{ steps.ready.outcome }}
+        run: |
+          printf '| Check | Outcome |\n| --- | --- |\n| API | %s |\n| Chromium | %s |\n| Firefox (retries=0) | %s |\n| Publication readiness | %s |\n' "$API_RESULT" "$CHROMIUM_RESULT" "$FIREFOX_RESULT" "$READY_RESULT" >> "$GITHUB_STEP_SUMMARY"
+          if test -f "$RUNNER_TEMP/cartehesta-test-diagnostics/summary.md"; then
+            cat "$RUNNER_TEMP/cartehesta-test-diagnostics/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Build and verify a code-only candidate outside the checkout
         if: ${{ github.event_name != 'workflow_dispatch' || !inputs.api_only }}
         env:

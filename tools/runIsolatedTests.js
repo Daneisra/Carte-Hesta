@@ -5,11 +5,16 @@ const crypto = require('node:crypto');
 const { spawn } = require('node:child_process');
 const { createSandbox, cleanEnvironment, assertPlainPath, removeSandbox, SOURCE_ROOT } = require('../tests/support/sandbox.cjs');
 const { startIsolatedServer } = require('./devServerWithStub');
+const { beginRun, recordRun, requireZeroFirefoxRetries } = require('./testDiagnostics');
 
 async function run(args) {
     const diagnostics = args.includes('--firefox-diagnostics');
-    args = args.filter(arg => arg !== '--firefox-diagnostics');
+    const ciDiagnostics = args.includes('--ci-diagnostics');
+    args = args.filter(arg => !['--firefox-diagnostics', '--ci-diagnostics'].includes(arg));
+    const project = args.find(arg => arg.startsWith('--project='))?.slice('--project='.length);
+    if (ciDiagnostics && !['api', 'chromium', 'firefox'].includes(project)) throw Error('CI diagnostics require one explicit project');
     const sandbox = createSandbox();
+    const receipt = ciDiagnostics ? beginRun(sandbox) : null;
     const unit = args[0] === '--unit';
     const storage = args[0] === '--storage';
     const publication = args[0] === '--publication';
@@ -80,6 +85,10 @@ async function run(args) {
         }
         copyResults(path.join(sandbox.root, 'results'), destination);
         fs.copyFileSync(path.join(sandbox.root, 'copied-code.json'), path.join(destination, 'copied-code.json'), fs.constants.COPYFILE_EXCL);
+        if (ciDiagnostics && project === 'firefox') {
+            try { requireZeroFirefoxRetries(JSON.parse(fs.readFileSync(path.join(destination, 'results.json'), 'utf8'))); }
+            catch { console.error('[isolated-tests] E_FIREFOX_RETRIES_OR_MISSING_RESULTS'); code = 1; }
+        }
         const summary = {
             exitCode: code, sandbox: sandbox.root, testArgs: args, violations,
             serverStopped: !app || app.child.exitCode !== null || app.child.signalCode !== null,
@@ -90,6 +99,7 @@ async function run(args) {
             catch (error) { code = 1; summary.cleanupError = error.message; summary.exitCode = 1; }
         }
         fs.writeFileSync(path.join(destination, 'isolation-summary.json'), JSON.stringify(summary, null, 2), { flag: 'wx' });
+        if (ciDiagnostics) recordRun(receipt, destination, project);
         console.log(`[isolated-tests] exit=${code}; diagnostics=${destination}`);
     }
     return code;
@@ -103,10 +113,11 @@ async function main() {
         return;
     }
     // No overrides that could substitute another server, config or persistent storageState.
-    const allowed = /^(?:--project=(?:api|chromium|firefox)|--headed|--update-snapshots|--list|--grep=.+|--reporter=(?:list|line)|--retries=0|--firefox-diagnostics)$/;
+    const allowed = /^(?:--project=(?:api|chromium|firefox)|--headed|--update-snapshots|--list|--grep=.+|--reporter=(?:list|line)|--retries=0|--firefox-diagnostics|--ci-diagnostics)$/;
     if (args.some(arg => !allowed.test(arg))) throw new Error('Unsupported test option: use the documented isolated commands');
     const projects = args.filter(arg => arg.startsWith('--project='));
     if (projects.length > 1) throw new Error('Select a single project per isolated run');
+    if (args.includes('--ci-diagnostics') && projects.length !== 1) throw new Error('CI diagnostics require one explicit project');
     if (args.includes('--firefox-diagnostics') && projects[0] !== '--project=firefox') throw new Error('Firefox diagnostics require --project=firefox');
     if (projects.length) process.exitCode = await run(args);
     else {

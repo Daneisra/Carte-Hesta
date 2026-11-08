@@ -12,7 +12,7 @@ function sample() {
         jobs: { total_count: 1, jobs: [{ name: 'Full Linux validation', conclusion: 'success', steps: [
             'Strict index gate (legacy debt must be removed before CI can pass)', 'Encoding and isolated unit/storage/publication suites',
             'Isolation, permissions, offline migration and rollback', 'API with isolation boundary enforcement',
-            'Both browsers (Firefox is mandatory)', 'Build and verify a code-only candidate outside the checkout',
+            'Chromium isolated tests', 'Firefox isolated tests without retries', 'Build and verify a code-only candidate outside the checkout',
             'Preserve verified code-only candidate for reviewed migration',
             'Release publication readiness (main and PRs targeting main)'
         ].map(name => ({ name, conclusion: 'success' })) }] },
@@ -20,11 +20,22 @@ function sample() {
     };
 }
 test('manual deployment accepts only the exact full Linux push/main candidate', () => assert.equal(validate(sample(), REV, REV).id, 3));
+test('diagnostic artifacts cannot replace or confuse the code-only deployment candidate', () => {
+    const s = sample();
+    s.artifacts.artifacts.push({ id: 4, name: 'cartehesta-tests-' + REV + '-1', expired: false, size_in_bytes: 200 });
+    s.artifacts.total_count = 2;
+    assert.equal(validate(s, REV, REV).id, 3);
+    s.artifacts.artifacts.shift(); s.artifacts.total_count = 1;
+    assert.throws(() => validate(s, REV, REV), /E_DEPLOY_ARTIFACT/);
+});
 for (const [name, mutate] of [
     ['pull request', s => s.run.event = 'pull_request'],
     ['manually dispatched CI', s => s.run.event = 'workflow_dispatch'],
     ['API diagnostics', s => s.jobs.jobs[0].name = 'API diagnostics only'],
-    ['skipped Firefox', s => s.jobs.jobs[0].steps[4].conclusion = 'skipped'],
+    ['skipped Chromium', s => s.jobs.jobs[0].steps.find(step => step.name === 'Chromium isolated tests').conclusion = 'skipped'],
+    ['skipped Firefox', s => s.jobs.jobs[0].steps.find(step => step.name === 'Firefox isolated tests without retries').conclusion = 'skipped'],
+    ['failed Firefox', s => s.jobs.jobs[0].steps.find(step => step.name === 'Firefox isolated tests without retries').conclusion = 'failure'],
+    ['old combined browser step', s => { s.jobs.jobs[0].steps = s.jobs.jobs[0].steps.filter(step => !['Chromium isolated tests', 'Firefox isolated tests without retries'].includes(step.name)); s.jobs.jobs[0].steps.push({ name: 'Both browsers (Firefox is mandatory)', conclusion: 'success' }); }],
     ['missing publication readiness', s => s.jobs.jobs[0].steps.pop()],
     ['failed publication readiness', s => s.jobs.jobs[0].steps.at(-1).conclusion = 'failure'],
     ['other repository', s => s.run.head_repository.full_name = 'attacker/Carte-Hesta'],
