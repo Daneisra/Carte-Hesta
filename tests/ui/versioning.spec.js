@@ -64,8 +64,12 @@ test.describe('Versioning et repli du changelog - UI', () => {
             if (path === '/changelog/') {
                 await expect(page.locator('.changelog-entry')).toHaveCount(CHANGELOG.length);
                 await expect(page.locator('#changelog-source')).toHaveText('Code');
-                await expect(page.locator('.changelog-entry').first()).toContainText('Date à confirmer');
-                await expect(page.locator('.changelog-entry').first()).toContainText('en préparation');
+                const first = page.locator('.changelog-entry').first();
+                const expectedDate = CHANGELOG[0].date
+                    ? new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(CHANGELOG[0].date)) : 'Date à confirmer';
+                await expect(first.locator('.changelog-entry-date')).toHaveText(expectedDate);
+                await expect(first.locator('.changelog-entry-title')).toHaveText(CHANGELOG[0].title);
+                await expect(first.locator('.changelog-entry-summary')).toHaveText(CHANGELOG[0].summary);
             }
             if (path === '/') {
                 await expect(page.locator('.home-changelog-item')).toHaveCount(3);

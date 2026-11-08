@@ -91,7 +91,7 @@ test('representative synthetic history survives public/admin reads, unchanged sa
         assert.equal(firstPublic.length, 51);
         assert.equal(firstPublic.filter(entry => !entryVersion(entry)).length, 3);
         for (const entry of original.changelog) assert(firstPublic.some(visible => visible.title === entry.title && visible.summary === entry.summary && visible.date === entry.date));
-        assert.equal(firstPublic[0].date, ''); assert(firstPublic[0].title.includes('en préparation'));
+        assert.deepEqual(firstPublic[0], { date: CHANGELOG[0].date, title: CHANGELOG[0].title, summary: CHANGELOG[0].summary });
         const admin = await readAdmin();
         assert.deepEqual(admin.changelog, original.changelog);
         assert.deepEqual(fs.readFileSync(file), before);

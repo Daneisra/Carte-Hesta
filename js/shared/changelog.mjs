@@ -1,12 +1,12 @@
 // Source canonique des notes produit. Les dates historiques proviennent du code importé.
-// 0.17.50 reste une préparation : aucune date de livraison n’est supposée.
+// La date de la version candidate doit être reconfirmée avant fusion et déploiement.
 export const CHANGELOG = [
     {
         "version": "0.17.50",
-        "status": "draft",
-        "date": "",
-        "title": "Version 0.17.50 - Communauté Hesta et suivi des versions (en préparation)",
-        "summary": "Nouveautés : communauté et soutien centralisés sur Hesta Hub ; accueil allégé et liens harmonisés entre les projets Hesta. Corrections : version cohérente sur toutes les pages, chargement du changelog et conservation de l’historique au-delà de 12 et 50 entrées ; seule la dernière variante d’une version est publique, avec toutes les variantes conservées ; tri stable et visibilité des médias contrôlée sur leurs contenus d’origine ; adaptations responsive de l’accueil. Administration : plafonds explicites pour les nouveaux textes, sans tronquer les anciennes notes longues. Technique : déploiement automatique après validation complète, vérification de la provenance et de l’intégrité des artefacts, attente de disponibilité HTTP au redémarrage et récupération du service après retour à une version saine. Maintenance : documentation des liens Hesta et de l’exploitation ; contrôles automatisés du versioning, refus des drafts avant fusion vers main et procédure de publication. Date de livraison à confirmer."
+        "status": "released",
+        "date": "2026-11-08",
+        "title": "Version 0.17.50 - Communauté Hesta et historique fiable",
+        "summary": "Communauté : accès et soutien regroupés sur Hesta Hub, accueil simplifié, liens harmonisés entre les projets et affichage adapté aux petits écrans. Versions et changelog : numéro cohérent sur les pages, pieds de page et métadonnées ; chargement plus fiable, pagination au-delà de 50 notes et repli local en cas d’indisponibilité du service. Historique : toutes les anciennes notes et leurs variantes sont conservées ; seule la dernière correction d’une version est affichée publiquement. Administration : saisies et messages de sauvegarde préservés lors des chargements concurrents ; rejet explicite des nouveaux textes trop longs sans modifier les anciennes notes. Sécurité et fiabilité : accès aux médias vérifié selon la visibilité de tous leurs contenus de référence ; contrôles de provenance et d’intégrité des livraisons, attente de disponibilité au redémarrage et récupération du service après un échec."
     },
     {
         "date": "2026-09-25",
