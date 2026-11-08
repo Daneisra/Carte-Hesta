@@ -292,7 +292,25 @@ Journaux : `test-results/ci-collector-review-*.tap` et
 Chromium, les dépendances, les timeouts et la sécurité de déploiement sont inchangés.
 La validation GitHub Actions/Linux de cette révision reste à réaliser.
 
-### Risques conservés : R-2, R-4 et R-6
+### Risques conservés : N-1, R-2, R-4 et R-6
+
+N-1 : un chemin local intégré à une URL HTTP/HTTPS peut rester visible. Le
+collecteur protège ces URL jusqu'au premier espace ou guillemet pour conserver
+leur utilité diagnostique. Par exemple, avec un utilisateur entièrement fictif :
+
+    http://127.0.0.1/?f=C:/Users/SyntheticUser/s.txt
+    http://127.0.0.1/a.js:1:2)/home/runner/b
+
+Le comportement est démontré en mémoire par la contre-revue, mais aucune source
+réaliste n'a été identifiée dans l'application ni aucun cas correspondant dans
+les exports réels examinés. La contre-revue n'y relève aucun marqueur
+`<absolute-path>` ; aucune fuite réelle n'est démontrée. Les racines connues du
+dépôt et du laboratoire sont masquées avant ce traitement, et les protections
+OAuth/d'authentification restent actives. Ce risque résiduel est accepté comme
+non bloquant dans le contexte actuel des laboratoires synthétiques. Une
+amélioration séparée devra masquer les chemins locaux dans les paramètres d'URL
+ou accolés à une référence HTTP sans détruire l'URL. Aucun changement du
+collecteur n'est effectué pour N-1 dans ce lot.
 
 R-2 : `recordRun()` dans le `finally` peut faire échouer une étape dont les tests
 ont réussi (taille, lien physique, pointeur déjà présent). Collecte ou upload en
