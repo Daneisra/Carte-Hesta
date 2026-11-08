@@ -4,7 +4,7 @@ export const CHANGELOG = [
     {
         "version": "0.17.50",
         "status": "released",
-        "date": "2026-11-08",
+        "date": "2026-11-09",
         "title": "Version 0.17.50 - Communauté Hesta et historique fiable",
         "summary": "Communauté : accès et soutien regroupés sur Hesta Hub, accueil simplifié, liens harmonisés entre les projets et affichage adapté aux petits écrans. Versions et changelog : numéro cohérent sur les pages, pieds de page et métadonnées ; chargement plus fiable, pagination au-delà de 50 notes et repli local en cas d’indisponibilité du service. Historique : toutes les anciennes notes et leurs variantes sont conservées ; seule la dernière correction d’une version est affichée publiquement. Administration : saisies et messages de sauvegarde préservés lors des chargements concurrents ; rejet explicite des nouveaux textes trop longs sans modifier les anciennes notes. Sécurité et fiabilité : accès aux médias vérifié selon la visibilité de tous leurs contenus de référence ; contrôles de provenance et d’intégrité des livraisons, attente de disponibilité au redémarrage et récupération du service après un échec."
     },

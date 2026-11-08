@@ -2,7 +2,8 @@
 
 ## État et fenêtre visée
 
-Date prévue de fusion et de livraison : **8 novembre 2026**, heure de Varsovie.
+Date prévue de fusion et de livraison : **9 novembre 2026**, heure de Varsovie.
+Le report du 8 au 9 novembre est lié à la fin des contrôles VPS à l’approche de minuit ; le changement de date impose une nouvelle CI complète avant fusion.
 La note du candidat utilise `status: 'released'` pour les contrôles de publication ;
 ce statut dans la branche ne constitue pas une preuve de déploiement. La PR nº 3
 reste en Draft. Avant fusion, reconfirmer cette date et la possibilité de terminer
@@ -27,23 +28,25 @@ déjà présents dans main appartiennent à ce lot documentaire ; aucune nouvell
 fonctionnalité n'est déduite d'une date de commit. Les 48 anciennes notes restent
 inchangées. Package, lockfile et version navigateur restent `0.17.50`.
 
-## Vérificateur VPS : état réel non contrôlé
+## Vérificateur VPS : contrôlé et actualisé le 8 novembre 2026
 
-Aucune connexion distante n'est configurée pour cet audit. Par décision du
-propriétaire, les contrôles nécessitant le VPS sont différés : aucun usage de la
-clé de transport restreinte, aucune tentative de contournement. **Révision,
-empreintes, dépendances, propriétaires et modes du vérificateur réellement
-installé restent inconnus.** La disponibilité des sauvegardes et du rollback
-actifs n'est pas vérifiée non plus. Ces contrôles sont obligatoires avant fusion
-et déploiement, même si la CI candidate devient entièrement verte.
+Au début de l’audit, l’accès distant n’était pas disponible pour le relecteur.
+L’opérateur a ensuite contrôlé le VPS avec son accès SSH habituel, sans utiliser
+la clé de transport restreinte : vérificateur initial root:root (répertoire 700,
+fichiers de politique 644), Node dédié v22.23.2, service PM2 actif et espace
+disponible. Les trois politiques installées correspondaient par empreintes à
+celles de `main` avant la PR. Le code actif app/public et les deux copies de
+retour arrière du reçu `deployment-9f6x2ks1` correspondaient à leurs manifestes
+de tailles, modes et SHA-256 ; aucun rollback de ce reçu n’était commencé.
 
 Le contrôleur du dépôt appelle le Node dédié
 `/opt/node-v22.23.2-linux-x64/bin/node` et le vérificateur figé
 `/usr/local/lib/cartehesta-release-verifier/tools/deployment.js`. La politique
-correspondant au main de départ refuse les nouveaux fichiers de l'artefact ;
-cela ne prouve pas que cette politique est encore installée.
+de `main` initialement observée refusait le nouveau format d’artefact ; elle
+a été remplacée sur le VPS, avec autorisation, par la copie validée des trois
+politiques ci-dessous. Le code applicatif actif est inchangé.
 
-Les trois fichiers de politique à comparer et, si nécessaire, actualiser sont :
+Les trois fichiers de politique installés et contrôlés sont :
 
 | Fichier | SHA-256 des octets LF du candidat |
 | --- | --- |
@@ -51,14 +54,25 @@ Les trois fichiers de politique à comparer et, si nécessaire, actualiser sont 
 | `server/publication/files.js` | `c626a03315ef4742e293d80ba927b4e4124e201e276908bfabf8cb0f39f5f5ae` |
 | `server/publication/staticFiles.js` | `b8d8e952833ab5465145ca9b5f6eca41d5bd86e60ccdb638c221e08114ff39b3` |
 
-Ces empreintes ont été recalculées et correspondent à la capsule locale privée
-`.tmp/versioning-audit/verifier-policy/`, ignorée par Git. La capsule doit être
-rattachée à la révision finalement autorisée ; tout écart du VPS exige revue,
-pas une installation automatique. Aucun contrôleur, droit ou secret à remplacer.
+Ces empreintes ont été recalculées dans la capsule de préparation, puis vérifiées
+sur la copie sœur et sur le répertoire actif après bascule. Une sauvegarde
+intégrale privée root et l’ancien répertoire du vérificateur sont conservés.
+Seuls les trois fichiers de politique diffèrent ; aucun contrôleur, compte,
+secret, service ni fichier app/public n’a été remplacé.
 
-## Contrôles opérateur en lecture seule avant autorisation
+L’artefact code-only de la CI Linux nº 13 (révision synthétique PR
+`852a970c9b91db50ed023bb31c9bf28577d69ed6`, ZIP SHA-256
+`f6f81b05d4bf650827c407e97be857c22d50a20ba2daa4e5991f8a6c3d80fa34`)
+a été téléchargé, vérifié puis extrait de manière bornée sur le VPS. Le
+vérificateur indépendant puis le vérificateur actif ont validé son manifeste
+(110 fichiers), tandis que trois copies modifiées ont été refusées :
+altération, ajout et suppression. La bascule a tenu le verrou de déploiement,
+conservé l’ancien répertoire et laissé `pm2-cartehesta.service` actif. Il
+reste à valider la nouvelle révision datée du 9 novembre par CI avant fusion.
 
-Avec une connexion adaptée et autorisée, sans modifier les permissions :
+## Contrôles opérateur en lecture seule (effectués le 8 novembre)
+
+Le protocole appliqué avant la bascule couvrait les étapes suivantes :
 
 1. Vérifier l'identité SSH contre la clé d'hôte déjà approuvée. Relever le chemin
    réel du vérificateur, les liens éventuels, propriétaires et modes de ses
@@ -78,7 +92,12 @@ Avec une connexion adaptée et autorisée, sans modifier les permissions :
 Si un contrôle n'est pas autorisé ou possible, s'arrêter et demander le relevé
 opérateur correspondant. Ne pas élargir les droits du compte de transport.
 
-## Transition à autoriser séparément
+## Transition contrôlée et autorisations restantes
+
+Les étapes de sauvegarde, copie sœur, validation de l’artefact et bascule du
+vérificateur (2 à 5) ont été effectuées le 8 novembre. Le gel des opérations
+concurrentes, la nouvelle CI après report de date, la fusion et le déploiement
+restent soumis à leurs contrôles et autorisations distincts.
 
 1. **Geler les fusions sur main et les déploiements manuels** pendant toute la
    fenêtre. Attendre la fin des activations en cours et consigner le main attendu,
@@ -128,6 +147,6 @@ du [runbook](OPS-RUNBOOK.md). Rétablir ensuite la politique de confiance adapt�
 changelog avec l'ancien code, qui conserve la limite historique de 12 notes.
 Si l'état sain ou le rollback ne peut pas être vérifié, conserver la maintenance.
 
-La préparation du code, la bascule du vérificateur, la fusion et la livraison
-restent des actes distincts. Seuls le commit/push de préparation et la CI sont
-autorisés à ce stade ; aucun tag ni release GitHub n'est demandé.
+La préparation du code et la bascule du vérificateur sont achevées. La fusion
+et la livraison restent des actes distincts non autorisés à ce stade ; aucun
+tag ni release GitHub n’est demandé.
