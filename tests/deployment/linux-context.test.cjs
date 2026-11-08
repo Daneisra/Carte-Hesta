@@ -58,3 +58,19 @@ test('dependency closure parses syntax without executing it and follows transiti
     assert.throws(() => verifyLocalDependencies(root, names), /escapes validation context/);
     // Fictional files are retained. No application, private data or host module was loaded.
 });
+
+test('browser imports resolve only published static modules inside page.evaluate, never Node absolute imports', () => {
+    const root = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'cartehesta-context-browser-synthetic-'));
+    fs.mkdirSync(path.join(root, 'tests/ui'), { recursive: true }); fs.mkdirSync(path.join(root, 'js/ui'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'package-lock.json'), '{"packages":{}}');
+    const file = path.join(root, 'tests/ui/browser.spec.js');
+    fs.writeFileSync(path.join(root, 'js/ui/adminHome.js'), 'export const synthetic = true;');
+    const names = ['package-lock.json', 'tests/ui/browser.spec.js', 'js/ui/adminHome.js'];
+    fs.writeFileSync(file, "throw Error('Never execute'); page.evaluate(async () => { await import('/js/ui/adminHome.js'); });");
+    const result = verifyLocalDependencies(root, names);
+    assert.deepEqual(result.edges, [{ from: 'tests/ui/browser.spec.js', to: 'js/ui/adminHome.js', browser: true }]);
+    assert.throws(() => verifyLocalDependencies(root, names.slice(0, -1)), /Missing local context dependency/);
+    for (const code of ["import('/js/ui/adminHome.js');", "page.evaluate(() => import('/private/store.json'));", "page.evaluate(() => import('https://external.invalid/code.js'));", "page.evaluate(() => {}, import('/js/ui/adminHome.js'));", "const fn = () => import('/js/ui/adminHome.js'); page.evaluate(fn);"]) {
+        fs.writeFileSync(file, code); assert.throws(() => verifyLocalDependencies(root, names), /Undeclared context package/);
+    }
+});

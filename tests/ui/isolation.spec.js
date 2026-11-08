@@ -1,5 +1,24 @@
-const { test, expect, loginAsSyntheticAdmin } = require('../support/playwright.cjs');
+const { test, expect, loginAsSyntheticAdmin, installBrowserBoundary } = require('../support/playwright.cjs');
 const { locations } = require('../fixtures/application.cjs');
+
+test('le routage Playwright bloque les deux URL externes testées puis permet une navigation locale', async ({ browser, baseURL }) => {
+    const context = await browser.newContext({
+        serviceWorkers: 'block',
+        proxy: { server: process.env.CARTE_TEST_PROXY, bypass: '127.0.0.1' }
+    });
+    try {
+        const denied = [];
+        await installBrowserBoundary(context, baseURL, denied);
+        const page = await context.newPage();
+        const urls = ['https://aus5.mozilla.org/update/3/SystemAddons/synthetic/update.xml', 'https://example.invalid/synthetic'];
+        for (const url of urls) await expect(page.goto(url)).rejects.toThrow();
+        expect(denied).toEqual(urls);
+        expect(browser.isConnected()).toBe(true);
+        const response = await page.goto('/');
+        expect(response.headers()['x-carte-test-run']).toBe(process.env.CARTE_TEST_TOKEN);
+        expect(process.env.MOZ_DISABLE_NONLOCAL_CONNECTIONS).toBe('1');
+    } finally { await context.close(); }
+});
 
 test('la carte utilise le processus isolé, les bibliothèques locales et un média synthétique valide', async ({ page }) => {
     await loginAsSyntheticAdmin(page);

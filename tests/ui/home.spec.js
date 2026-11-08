@@ -1,3 +1,4 @@
+const { version: APP_VERSION } = require('../../package.json');
 const { test, expect } = require('../support/playwright.cjs');
 
 test.describe('Accueil - Portail Hesta', () => {
@@ -73,8 +74,8 @@ test.describe('Accueil - patch notes', () => {
     await page.waitForLoadState('domcontentloaded');
 
     await expect(page.locator('#home-changelog-title')).toHaveText('Mises à jour de Carte Hesta');
-    await expect(page.locator('#home-version')).toHaveText('0.17.49');
-    await expect(page.locator('#home-changelog-status')).toHaveText('A jour');
+    await expect(page.locator('#home-version')).toHaveText(APP_VERSION);
+    await expect(page.locator('#home-changelog-status')).toHaveText('Code + Config');
     await expect(page.locator('.home-changelog-item')).toHaveCount(1);
     await expect(page.locator('.home-changelog-item').first()).toContainText('Version 0.17.49 - Acces au systeme PA');
     await expect(page.locator('.site-footer-links a[href="/geek-unchained/"]')).toHaveText('Geek Unchained');

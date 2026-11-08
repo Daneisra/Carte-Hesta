@@ -1,3 +1,4 @@
+const { version: APP_VERSION } = require('../../package.json');
 const { test, expect } = require('../support/playwright.cjs');
 
 test.describe('Geek Unchained - page publique', () => {
@@ -14,7 +15,7 @@ test.describe('Geek Unchained - page publique', () => {
     await expect(page.locator('a[href="/map/"]').first()).toBeVisible();
     await expect(page.locator('a[href="/timeline/"]').first()).toBeVisible();
     await expect(page.locator('a[href="https://hesta.dannytech.fr/#communaute"]').first()).toBeVisible();
-    await expect(page.locator('#gu-version')).toHaveText('0.17.49');
+    await expect(page.locator('#gu-version')).toHaveText(APP_VERSION);
   });
 
   test('reste lisible sur mobile sans debordement horizontal', async ({ page }) => {

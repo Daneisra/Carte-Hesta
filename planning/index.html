@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/planning.css">
     <link rel="stylesheet" href="/assets/hesta-identity.css">
     <link rel="icon" type="image/png" href="/assets/logo.png">
+    <meta name="application-version" content="">
 </head>
 <body>
     <a class="planning-skip-link" href="#planning-main">Aller au contenu principal</a>
@@ -58,7 +59,7 @@
                 <div class="planning-hero-meta" aria-label="Etat du module planning">
                     <div class="planning-stat">
                         <span>Version</span>
-                        <strong id="planning-version">0.17.49</strong>
+                        <strong id="planning-version" data-app-version>—</strong>
                     </div>
                     <div class="planning-stat">
                         <span>Statut</span>
@@ -228,7 +229,7 @@
         <footer class="planning-footer site-footer">
             <div class="site-footer-left">
                 <p>&copy; <span id="planning-year"></span> Carte Hesta. Tous droits reserves.</p>
-                <p class="site-footer-version">Version <span id="planning-version-footer">0.17.49</span></p>
+                <p class="site-footer-version">Version <span id="planning-version-footer" data-app-version>—</span></p>
                 <p class="site-footer-note">Projet narratif / JDR - fan project / page planning officielle.</p>
             </div>
             <nav class="site-footer-links" aria-label="Liens secondaires">
@@ -243,5 +244,6 @@
     </div>
 
     <script type="module" src="/js/planning.js"></script>
+    <script type="module" src="/js/version.js"></script>
 </body>
 </html>

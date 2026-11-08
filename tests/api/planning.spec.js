@@ -1,5 +1,5 @@
 const { test, expect } = require('../support/playwright.cjs');
-const { siteConfig } = require('../fixtures/application.cjs');
+const { CHANGELOG } = require('../../js/shared/changelog.mjs');
 
 const loginWithDiscordStub = async request => {
     const loginResponse = await request.get('/auth/discord/login', { maxRedirects: 0 });
@@ -22,7 +22,7 @@ test.describe('Planning - API', () => {
         const changelogResponse = await request.get('/api/changelog?limit=2');
         expect(changelogResponse.status()).toBe(200);
         const changelogPayload = await changelogResponse.json();
-        expect(changelogPayload.entries.map(entry => entry.title)).toEqual(siteConfig.changelog.map(entry => entry.title));
+        expect(changelogPayload.entries.map(entry => entry.title)).toEqual(CHANGELOG.slice(0, 2).map(entry => entry.title));
 
         const publicBefore = await request.get('/api/planning/sessions');
         expect(publicBefore.status()).toBe(200);

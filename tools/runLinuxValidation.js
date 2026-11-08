@@ -15,7 +15,7 @@ function main(args = process.argv.slice(2)) {
         }
     }
     const suites = args.length ? [['--test', 'tests/deployment/linux.test.cjs']] : [
-        ['tools/lintEncoding.js'], ['tools/runIsolatedTests.js', '--unit'], ['tools/runIsolatedTests.js', '--storage'],
+        ['tools/lintEncoding.js'], ['tools/checkRelease.js'], ['tools/runIsolatedTests.js', '--unit'], ['tools/runIsolatedTests.js', '--storage'],
         ['tools/runIsolatedTests.js', '--publication'], ['--test', 'tests/isolation/*.test.cjs'], ['--test', 'tests/deployment/*.test.cjs'],
         ['tools/runIsolatedTests.js', '--project=api'], ['tools/runIsolatedTests.js', '--project=chromium'], ['tools/runIsolatedTests.js', '--project=firefox'],
         ['tools/benchmarkSynthetic.js']

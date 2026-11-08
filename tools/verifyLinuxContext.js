@@ -8,7 +8,7 @@ const { BACKEND, OPS, scan, directories } = require('./deployment/release');
 const STATIC_FILES = require('../server/publication/staticFiles');
 const EXTRA = ['Dockerfile', 'playwright.config.js', '.editorconfig', '.gitattributes', '.gitignore', 'README.md', 'ROADMAP.md',
     '.github/workflows/ci.yml', '.github/workflows/deploy.yml', '.github/scripts/verify-ci-run.cjs', '.github/scripts/transport-deploy.py', 'ops/deploy-code.py', 'ops/receive-deploy.py', 'tools/deployment/legacyTrackedPaths.json',
-    ...['auditTrackedPaths', 'gitCleanupPreflight', 'prepareGitCleanup', 'localBackupManifest', 'verifyLinuxContext', 'runLinuxValidation', 'benchmarkSynthetic', 'lintEncoding', 'runIsolatedTests', 'devServerWithStub', 'diagnoseFirefox', 'prepareFirefoxLinuxContext'].map(n => `tools/${n}.js`)];
+    ...['checkRelease', 'syncVersion', 'auditTrackedPaths', 'gitCleanupPreflight', 'prepareGitCleanup', 'localBackupManifest', 'verifyLinuxContext', 'runLinuxValidation', 'benchmarkSynthetic', 'lintEncoding', 'runIsolatedTests', 'testDiagnostics', 'devServerWithStub', 'diagnoseFirefox', 'prepareFirefoxLinuxContext'].map(n => `tools/${n}.js`)];
 // Development-only AST parser already locked with Playwright. Not used by the pre-install
 // structural verifier, and never included in the application release or executed test code.
 function verifyLocalDependencies(root, entries) {
@@ -33,8 +33,15 @@ function verifyLocalDependencies(root, entries) {
         const text = readPlain(path.join(root, from)).toString('utf8');
         let ast;
         try { ast = babelParse(text, from, false); } catch { throw Error(`Cannot parse context module: ${from}`); }
-        const fileUrlImports = new WeakMap();
+        const fileUrlImports = new WeakMap(), browserImports = new WeakMap();
         traverse(ast, { CallExpression(p) {
+            if (p.node.callee.type === 'Import' && p.node.arguments[0]?.type === 'StringLiteral' && from.startsWith('tests/ui/')) {
+                const target = p.node.arguments[0].value.slice(1);
+                const browserCallback = p.findParent(parent => parent.isFunction() && parent.parentPath.isCallExpression() &&
+                    parent.parentPath.node.arguments[0] === parent.node && parent.parentPath.node.callee.type === 'MemberExpression' &&
+                    parent.parentPath.node.callee.object.name === 'page' && parent.parentPath.node.callee.property.name === 'evaluate');
+                if (p.node.arguments[0].value.startsWith('/js/') && STATIC_FILES.includes(target) && browserCallback) browserImports.set(p.node, target);
+            }
             if (p.node.callee.type !== 'Import' || p.node.arguments[0]?.type !== 'Identifier') return;
             const binding = p.scope.getBinding(p.node.arguments[0].name);
             const init = binding?.constant && binding.kind === 'const' && binding.path.node.init;
@@ -54,7 +61,11 @@ function verifyLocalDependencies(root, entries) {
             if (argument) {
                 if (argument.type === 'StringLiteral') {
                     const specifier = argument.value;
-                    if (specifier.startsWith('.')) local(from, specifier, !!declared || node.callee?.type === 'Import');
+                    if (browserImports.has(node)) {
+                        const target = browserImports.get(node);
+                        if (!names.has(target)) throw Error(`Missing local context dependency: ${from}`);
+                        edges.push({ from, to: target, browser: true });
+                    } else if (specifier.startsWith('.')) local(from, specifier, !!declared || node.callee?.type === 'Import');
                     else if (!packagePresent(specifier)) throw Error(`Undeclared context package: ${from}`);
                 } else if (fileUrlImports.has(node)) {
                     local(from, fileUrlImports.get(node), true);

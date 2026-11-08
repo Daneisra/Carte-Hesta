@@ -8,7 +8,6 @@ import {
     resolveLocalTimezone
 } from './ui/availability.mjs';
 
-const SITE_CONFIG_URL = '/assets/site-config.json';
 const SESSION_URL = '/auth/session';
 const PROFILE_URL = '/api/profile';
 const SESSIONS_URL = '/api/planning/sessions';
@@ -17,8 +16,6 @@ const DATED_AVAILABILITY_URL = '/api/planning/my-availability';
 
 const dom = {
     year: document.getElementById('planning-year'),
-    version: document.getElementById('planning-version'),
-    versionFooter: document.getElementById('planning-version-footer'),
     status: document.getElementById('planning-status'),
     profileName: document.getElementById('planning-profile-name'),
     timezone: document.getElementById('planning-timezone'),
@@ -1090,22 +1087,6 @@ const setPlanningView = view => {
     renderMonthView();
 };
 
-const loadVersion = async () => {
-    try {
-        const response = await fetch(SITE_CONFIG_URL, { cache: 'no-store' });
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        const config = await response.json();
-        if (config?.version) {
-            setText(dom.version, config.version);
-            setText(dom.versionFooter, config.version);
-        }
-    } catch (error) {
-        console.warn('[planning] site config unavailable, keeping static version', error);
-    }
-};
-
 const selectAgendaDateForAvailability = dateKey => {
     if (!dateKey || !dom.datedDate) {
         return;
@@ -1353,7 +1334,6 @@ renderDatedAvailability();
 renderAdminSessions();
 setPlanningView('week');
 syncSessionCard();
-loadVersion();
 loadSessions();
 loadSession().then(() => {
     loadDatedAvailability();

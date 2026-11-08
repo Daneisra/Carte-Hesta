@@ -57,7 +57,7 @@ test('ephemeral Firefox update policy is restrictive, verified and never overwri
         assert.deepEqual(installFirefoxUpdatePolicy(browser, 'http://127.0.0.1:12345'), { updateDisabled: true, existingPolicyOverwritten: false });
         const policy = path.join(browser, 'distribution', 'policies.json');
         const before = fs.readFileSync(policy);
-        assert.deepEqual(JSON.parse(before), { policies: { DisableAppUpdate: true, AppUpdateURL: 'http://127.0.0.1:12345/_firefox/updates.xml' } });
+        assert.deepEqual(JSON.parse(before), { policies: { DisableAppUpdate: true, DisableSystemAddonUpdate: true, AppUpdateURL: 'http://127.0.0.1:12345/_firefox/updates.xml' } });
         assert.throws(() => installFirefoxUpdatePolicy(browser, 'http://127.0.0.1:12345'), { code: 'EEXIST' });
         assert.deepEqual(fs.readFileSync(policy), before);
         for (const origin of ['https://example.invalid', 'http://localhost:12345', 'http://127.0.0.1', 'http://user@127.0.0.1:12345', 'http://127.0.0.1:12345/private']) assert.throws(() => installFirefoxUpdatePolicy(browser, origin), /owned loopback/);
@@ -174,8 +174,25 @@ test('browser routing serves local pinned vendors, stubs embeds and refuses all 
     assert.equal((await route('https://cdn.discordapp.com/embed/avatars/0.png')).contentType, 'image/png');
     assert.equal(await route('https://cdn.discordapp.com/avatars/unapproved.png'), 'abort');
     assert.equal(await route('https://example.invalid/private'), 'abort');
+    assert.equal(await route('https://aus5.mozilla.org/update/3/SystemAddons/synthetic/update.xml'), 'abort');
     assert.equal(await route('http://127.0.0.1:4173/api/profile'), 'abort');
-    assert.equal(denied.length, 3);
+    assert.equal(denied.length, 4);
+});
+
+test('Firefox diagnostic options cannot increase retries or apply to another browser', () => {
+    const sandbox = createSandbox();
+    try {
+        for (const args of [['--project=firefox', '--retries=2'], ['--project=chromium', '--firefox-diagnostics']]) {
+            const result = spawnSync(process.execPath, [path.join(SOURCE_ROOT, 'tools/runIsolatedTests.js'), ...args], {
+                cwd: SOURCE_ROOT, env: cleanEnvironment(sandbox, { CARTE_TEST_PROCESS: 'runner' }),
+                encoding: 'utf8', timeout: 15_000, windowsHide: true
+            });
+            assert.equal(result.error, undefined);
+            assert.equal(result.status, 1);
+            assert.match(result.stderr, /Unsupported test option|Firefox diagnostics require/);
+        }
+        assert.equal(fs.readdirSync(sandbox.root).filter(name => name.startsWith('boundary-')).length, 0);
+    } finally { removeSandbox(sandbox.root, sandbox.token); }
 });
 
 test('all existing specs import the isolated fixture; no production JSON imports or reset hooks remain', () => {
@@ -201,6 +218,9 @@ test('new server binds a distinct ephemeral port and stops without touching an o
         assert.notEqual(app.port, occupied.address().port);
         assert.notEqual(app.port, app.stubPort);
         const policy = JSON.parse(fs.readFileSync(cleanEnvironment(sandbox).PLAYWRIGHT_FIREFOX_POLICIES_JSON));
+        assert.equal(policy.policies.DisableAppUpdate, true);
+        assert.equal(policy.policies.DisableSystemAddonUpdate, true);
+        assert.equal(cleanEnvironment(sandbox).MOZ_DISABLE_NONLOCAL_CONNECTIONS, '1');
         assert.equal(policy.policies.AppUpdateURL, 'http://127.0.0.1:' + app.stubPort + '/_firefox/updates.xml');
         const update = await new Promise((resolve, reject) => http.get(policy.policies.AppUpdateURL, response => {
             let body = ''; response.on('data', chunk => { body += chunk; });

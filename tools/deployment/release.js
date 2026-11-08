@@ -5,6 +5,8 @@ const { plainPath, within } = require('../../server/storage/paths');
 const { readPlain, digest, buildPublic, STATIC_FILES, readIndex, verified } = require('../../server/publication/files');
 const BACKEND = [
     'server.js', 'package.json', 'package-lock.json',
+    'server/siteConfigHistory.js',
+    'js/shared/changelog.mjs', 'js/shared/changelogData.mjs',
     ...['annotations', 'auth', 'health', 'index', 'locations', 'questEvents', 'timeline'].map(n => `server/routes/${n}.js`),
     ...['assetsArchive', 'fileLock', 'logger'].map(n => `server/utils/${n}.js`),
     ...['authConfig', 'jsonStore', 'paths', 'sessions'].map(n => `server/storage/${n}.js`),

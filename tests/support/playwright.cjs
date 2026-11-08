@@ -3,6 +3,7 @@ const path = require('node:path');
 const { test: base, expect } = require('@playwright/test');
 const { PNG } = require('../fixtures/application.cjs');
 const { verifySandbox, SOURCE_ROOT } = require('./sandbox.cjs');
+if (process.env.CARTE_FIREFOX_DIAGNOSTICS === '1') require('../firefox/instrumentation.cjs').instrument();
 
 const vendor = new Map([
     ['https://unpkg.com/leaflet/dist/leaflet.js', ['leaflet/dist/leaflet.js', 'application/javascript']],

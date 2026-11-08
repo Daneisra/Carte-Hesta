@@ -24,7 +24,8 @@ function validate({ run, workflow, jobs, artifacts }, revision, current) {
     if (job.name !== 'Full Linux validation' || job.conclusion !== 'success') throw Error('E_DEPLOY_NOT_FULL_CI');
     for (const name of ['Strict index gate (legacy debt must be removed before CI can pass)',
         'Encoding and isolated unit/storage/publication suites', 'Isolation, permissions, offline migration and rollback',
-        'API with isolation boundary enforcement', 'Both browsers (Firefox is mandatory)',
+        'API with isolation boundary enforcement', 'Chromium isolated tests', 'Firefox isolated tests without retries',
+        'Release publication readiness (main and PRs targeting main)',
         'Build and verify a code-only candidate outside the checkout', 'Preserve verified code-only candidate for reviewed migration']) {
         if (job.steps.filter(step => step.name === name && step.conclusion === 'success').length !== 1) throw Error('E_DEPLOY_MISSING_CI_STEP');
     }

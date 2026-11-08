@@ -1,4 +1,6 @@
 // Explicit response shapes; never spread a persistent record into a public response.
+const { version: APP_VERSION } = require('../../package.json');
+const { mergeChangelog } = require('../../js/shared/changelogData.mjs');
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 const scalar = value => typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value));
 function pick(source, shape) {
@@ -34,4 +36,11 @@ function publicTimeline(source) {
 function publicTypes(source) {
     return Object.fromEntries(Object.entries(source).filter(([, value]) => object(value) && !unresolved(value)).map(([name, value]) => [name, pick(value, { icon: true, zoom: true, label: true, color: true })]));
 }
-module.exports = { publicSiteConfig: source => pick(source, siteShape), publicTimeline, publicTypes };
+const siteConfigFields = source => pick(source, siteShape);
+function publicSiteConfig(source) {
+    const result = siteConfigFields(source);
+    result.version = APP_VERSION;
+    result.changelog = mergeChangelog(result.changelog);
+    return result;
+}
+module.exports = { publicSiteConfig, siteConfigFields, publicTimeline, publicTypes };

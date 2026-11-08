@@ -1,3 +1,4 @@
+import { APP_VERSION } from '../shared/appVersion.mjs';
 import { sanitizeString } from '../shared/locationSchema.mjs';
 import {
     setPanelStatus,
@@ -68,7 +69,7 @@ export const normalizeAdminSiteConfig = (config = {}) => {
         ? home.tags.map(tag => sanitizeString(tag)).filter(Boolean)
         : ['Carte narrative', 'Quetes live', 'Groupes JDR', 'Profils & personnages'];
     return {
-        version: sanitizeString(config?.version || '0.17.49'),
+        version: APP_VERSION,
         home: {
             kicker: sanitizeString(home.kicker || 'Accueil - Hub narratif'),
             title: sanitizeString(home.title || "Entrez dans l'univers avant d'ouvrir la carte"),
@@ -317,7 +318,7 @@ export const renderAdminSiteConfig = ctx => {
 };
 
 export const collectAdminSiteConfigDraft = ctx => normalizeAdminSiteConfig({
-    version: ctx.adminSiteConfig?.version || '0.17.49',
+    version: APP_VERSION,
     home: {
         kicker: ctx.adminDom.homeKicker?.value || '',
         title: ctx.adminDom.homeTitle?.value || '',
@@ -421,9 +422,6 @@ export const validateAdminSiteConfigDraft = config => {
     if (config?.legal?.creditsUrl && !(isHttp(config.legal.creditsUrl) || isRelative(config.legal.creditsUrl))) {
         errors.push('URL credits invalide (http(s) ou chemin relatif attendu).');
     }
-    if (!Array.isArray(config?.changelog) || !config.changelog.length) {
-        errors.push('Ajoutez au moins une patch note.');
-    }
     return errors;
 };
 
@@ -432,6 +430,7 @@ export const markAdminSiteConfigDirty = ctx => {
         return;
     }
     ctx.adminSiteConfigDirty = true;
+    ctx.adminSiteConfigEditRevision = (ctx.adminSiteConfigEditRevision || 0) + 1;
     setAdminHomeStatus(ctx, '');
     renderAdminHomeErrors(ctx, []);
     syncAdminHomeEditor(ctx);
@@ -448,6 +447,18 @@ export const fetchAdminSiteConfig = async ctx => {
         syncAdminHomeEditor(ctx);
         return;
     }
+    const editRevision = ctx.adminSiteConfigEditRevision || 0;
+    const keepNewerEdits = () => {
+        // A save has priority over an earlier read, even without an intervening edit.
+        if (ctx.adminSiteConfigPending || ctx.adminDom.homeStatus?.classList.contains('is-error')) return true;
+        if ((ctx.adminSiteConfigEditRevision || 0) === editRevision) return false;
+        // A save may already have cleared Dirty; the edit revision still identifies the newer form.
+        // Do not replace a save's pending, error or success message with loading information.
+        if (!ctx.adminSiteConfigPending && !ctx.adminDom.homeStatus?.textContent) {
+            setAdminHomeStatus(ctx, 'Vos modifications plus récentes sont conservées ; le chargement ne remplace pas la saisie.');
+        }
+        return true;
+    };
     setAdminHomeStatus(ctx, "Chargement de la configuration de l'accueil...");
     try {
         const response = await fetch(HOME_ADMIN_API_ROUTE, {
@@ -458,12 +469,14 @@ export const fetchAdminSiteConfig = async ctx => {
             throw new Error(`HTTP ${response.status}`);
         }
         const payload = await response.json();
+        if (keepNewerEdits()) return;
         ctx.adminSiteConfig = normalizeAdminSiteConfig(payload?.config || {});
         ctx.adminSiteConfigSource = 'api';
         ctx.adminSiteConfigDirty = false;
         renderAdminSiteConfig(ctx);
         setAdminHomeStatus(ctx, "Configuration de l'accueil chargee depuis l'API admin.");
     } catch (error) {
+        if (keepNewerEdits()) return;
         console.error('[admin] site config fetch failed', error);
         ctx.logTelemetryEvent({
             title: 'Admin accueil - chargement',
@@ -480,12 +493,14 @@ export const fetchAdminSiteConfig = async ctx => {
                 throw new Error(`HTTP ${fallbackResponse.status}`);
             }
             const fallbackPayload = await fallbackResponse.json();
+            if (keepNewerEdits()) return;
             ctx.adminSiteConfig = normalizeAdminSiteConfig(fallbackPayload || {});
             ctx.adminSiteConfigSource = 'fallback';
             ctx.adminSiteConfigDirty = false;
             renderAdminSiteConfig(ctx);
             setAdminHomeStatus(ctx, "API admin indisponible. Formulaire charge depuis assets/site-config.json en lecture seule.", true);
         } catch (fallbackError) {
+            if (keepNewerEdits()) return;
             console.error('[admin] site config fallback fetch failed', fallbackError);
             ctx.adminSiteConfig = null;
             ctx.adminSiteConfigSource = 'unloaded';
@@ -520,7 +535,8 @@ export const saveAdminSiteConfig = async ctx => {
             body: JSON.stringify({ config: draft })
         });
         if (!response.ok) {
-            const error = new Error(`HTTP ${response.status}`);
+            const details = await response.json().catch(() => null);
+            const error = new Error(details?.message || `HTTP ${response.status}`);
             error.status = response.status;
             throw error;
         }
@@ -533,7 +549,7 @@ export const saveAdminSiteConfig = async ctx => {
         ctx.announcer?.polite?.("Configuration de l'accueil enregistree.");
     } catch (error) {
         console.error('[admin] site config save failed', error);
-        setAdminHomeStatus(ctx, "Impossible d'enregistrer l'accueil.", true);
+        setAdminHomeStatus(ctx, error.status === 400 ? error.message : "Impossible d'enregistrer l'accueil.", true);
         ctx.logTelemetryEvent({
             title: 'Admin accueil - sauvegarde',
             description: error?.message || "Echec sauvegarde configuration d'accueil",

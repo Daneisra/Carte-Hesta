@@ -1,3 +1,7 @@
+import { APP_VERSION } from './shared/appVersion.mjs';
+import { CHANGELOG } from './shared/changelog.mjs';
+import { mergeChangelog, normalizeEntries } from './shared/changelogData.mjs';
+import { loadChangelog } from './shared/changelogClient.mjs';
 import { setAvatarImage } from './ui/avatar.mjs';
 const dom = {
     year: document.getElementById('home-year'),
@@ -61,13 +65,12 @@ const PREFERENCES_STORAGE_KEY = 'interactive-map-preferences';
 const SITE_CONFIG_URL = '/assets/site-config.json';
 const LOCATIONS_DATA_URL = '/assets/locations.json';
 const PORTAL_URL = 'https://hesta.dannytech.fr/';
-const CHANGELOG_URL = '/api/changelog?limit=3';
 const LIVE_ITEMS_LIMIT = 5;
 const PAYPAL_DONATION_URL = 'https://paypal.me/Daneisra?country.x=FR&locale.x=fr_FR';
 const HOME_ADMIN_ENTRY_URL = '/?admin=home';
 
 const DEFAULT_SITE_CONFIG = {
-    version: '0.17.49',
+    version: APP_VERSION,
     home: {
         kicker: 'Accueil - Hub narratif',
         title: "Entrez dans l'univers avant d'ouvrir la carte",
@@ -122,248 +125,7 @@ const DEFAULT_SITE_CONFIG = {
         creditsUrl: '/docs/ASSETS-CREDITS.md',
         footerNote: "Projet narratif / JDR - fan project / page d'accueil officielle."
     },
-        changelog: [
-        {
-            date: '2026-09-25',
-            title: 'Version 0.17.49 - Acces au systeme PA',
-            summary: 'L accueil propose un lien direct vers l outil Systeme PA / Armures d100 dans la navigation principale.'
-        },
-        {
-            date: '2026-06-01',
-            title: 'Version 0.17.48 - Page Geek Unchained',
-            summary: 'Une page publique dediee a la Geek Unchained presente Le Monde d Hesta, ses tables JDR, la carte interactive et les infos pratiques de convention.'
-        },
-        {
-            date: '2026-05-26',
-            title: 'Version 0.17.47 - Admin groupes et tests API',
-            summary: 'L admin carte permet de mettre a jour tous les groupes JDR en une action et les tests API partageant des fichiers persistants sont serialises.'
-        },
-        {
-            date: '2026-05-26',
-            title: 'Version 0.17.46 - Publication version et changelog',
-            summary: 'La configuration servie aligne les versions affichees et publie correctement les patch notes du planning multi-date sur l accueil et le changelog.'
-        },
-        {
-            date: '2026-05-26',
-            title: 'Version 0.17.45 - Planning multi-date',
-            summary: 'Les joueurs et admins peuvent enregistrer plusieurs dates en une fois ; les syntheses hebdomadaires obsoletes ont ete retirees du planning et de l admin carte.'
-        },
-        {
-            date: '2026-05-20',
-            title: 'Version 0.17.44 - Planning date et sessions',
-            summary: 'Le planning permet de cliquer une date pour ajouter une disponibilite, retire l ancien affichage semaine type, prolonge la session Discord et harmonise les footers.'
-        },
-        {
-            date: '2026-05-18',
-            title: 'Version 0.17.43 - Admin planning',
-            summary: 'La page planning gagne une interface admin pour creer, modifier et supprimer les sessions candidates directement depuis l agenda.'
-        },
-        {
-            date: '2026-05-18',
-            title: 'Version 0.17.42 - Disponibilites datees planning',
-            summary: 'Le planning permet aux utilisateurs de declarer des disponibilites a une date et une heure precises, avec affichage direct dans l agenda.'
-        },
-        {
-            date: '2026-05-18',
-            title: 'Version 0.17.41 - Conflits agenda planning',
-            summary: 'Chaque session du planning affiche les conflits, le signal de disponibilite hebdomadaire et les meilleurs creneaux possibles.'
-        },
-        {
-            date: '2026-05-18',
-            title: 'Version 0.17.40 - Reponses agenda planning',
-            summary: 'Les sessions du planning peuvent etre creees cote API, modifiees par admin et recevoir les reponses des joueurs par date precise.'
-        },
-        {
-            date: '2026-05-17',
-            title: 'Version 0.17.39 - Agenda planning date',
-            summary: 'Le planning gagne un agenda mensuel date, une API de lecture des sessions candidates et une persistance JSON dediee.'
-        },
-        {
-            date: '2026-05-14',
-            title: 'Version 0.17.38 - Roadmap agenda reel',
-            summary: 'La roadmap distingue le socle de disponibilites du futur rework agenda/calendrier date avec sessions candidates.'
-        },
-        {
-            date: '2026-05-14',
-            title: 'Version 0.17.37 - Vue mois planning',
-            summary: 'Le planning propose une bascule semaine/mois lisible sur desktop et mobile, avec projection des disponibilites sur les prochaines semaines.'
-        },
-        {
-            date: '2026-05-14',
-            title: 'Version 0.17.36 - Statuts planning',
-            summary: 'Les disponibilites du planning gerent maintenant les statuts disponible, incertain, indisponible et non renseigne.'
-        },
-        {
-            date: '2026-05-14',
-            title: 'Version 0.17.35 - Synthese planning',
-            summary: 'Le planning affiche les meilleurs creneaux communs avec une synthese globale et des scopes de groupes JDR quand ils existent.'
-        },
-        {
-            date: '2026-05-14',
-            title: 'Version 0.17.34 - Disponibilites planning',
-            summary: 'La page planning permet aux utilisateurs connectes de cocher leurs disponibilites par jour et creneau puis de les enregistrer dans leur profil.'
-        },
-        {
-            date: '2026-05-14',
-            title: 'Version 0.17.33 - Page planning JDR',
-            summary: 'Une page dediee /planning/ pose le socle UI pour organiser les sessions et preparer les disponibilites des groupes.'
-        },
-        {
-            date: '2026-05-14',
-            title: 'Version 0.17.32 - CI Playwright optimisee',
-            summary: 'La CI utilise npm ci, cache les dependances et navigateurs, separe les projets Playwright et conserve les diagnostics en echec.'
-        },
-        {
-            date: '2026-05-13',
-            title: 'Version 0.17.31 - Encodage UTF-8 verrouille',
-            summary: 'Les conventions d encodage sont explicites via EditorConfig et le lint UTF-8 controle les fichiers texte du projet.'
-        },
-        {
-            date: '2026-05-13',
-            title: 'Version 0.17.30 - Nettoyage legacy tests',
-            summary: 'L ancien placeholder de test unitaire est retire, les compatibilites serveur utiles restent couvertes.'
-        },
-        {
-            date: '2026-05-13',
-            title: 'Version 0.17.29 - Annotations modularisees',
-            summary: 'La normalisation des annotations sort de UiController avec tests unitaires dedies.'
-        },
-        {
-            date: '2026-05-13',
-            title: 'Version 0.17.28 - Personnages modularises',
-            summary: 'La normalisation des personnages utilisateur sort de UiController avec tests unitaires dedies.'
-        },
-        {
-            date: '2026-05-13',
-            title: 'Version 0.17.27 - Personnalisation profil modularisee',
-            summary: 'La normalisation du profil utilisateur sort de UiController pour isoler le modele de donnees.'
-        },
-        {
-            date: '2026-05-13',
-            title: 'Version 0.17.26 - Disponibilites modularisees',
-            summary: 'Le modele des disponibilites sort de UiController pour reduire les dependances UI.'
-        },
-        {
-            date: '2026-05-12',
-            title: 'Version 0.17.25 - Patch notes accueil automatises',
-            summary: "L'accueil affiche les dernieres versions depuis l API changelog avec fallback local."
-        },
-        {
-            date: '2026-05-12',
-            title: 'Version 0.17.24 - Changelog produit prioritaire',
-            summary: "La page changelog est accessible depuis la navigation accueil et affiche les versions produit avant l historique Git brut."
-        },
-        {
-            date: '2026-05-12',
-            title: 'Version 0.17.23 - Page changelog dediee',
-            summary: "Une page publique /changelog/ regroupe les versions et changements recents de la carte."
-        },
-        {
-            date: '2026-05-12',
-            title: 'Version 0.17.22 - Compteur Discord fiabilise',
-            summary: "Le compteur Discord de l'accueil affiche un etat live ou un fallback manuel clair quand l API Discord est indisponible."
-        },
-        {
-            date: '2026-05-11',
-            title: 'Version 0.17.21 - Telechargement assets fiabilise',
-            summary: 'La generation d archive assets corrige le fallback tar, harmonise les exclusions et expose la taille de l archive au telechargement.'
-        },
-        {
-            date: '2026-05-11',
-            title: 'Version 0.17.20 - Session Discord prolongee',
-            summary: 'La verification de session renouvelle le cookie Discord actif afin de maintenir la connexion pendant l usage regulier.'
-        },
-        {
-            date: '2026-05-11',
-            title: 'Version 0.17.19 - QA responsive mobile',
-            summary: 'Une suite Playwright dediee verifie les pages publiques et l editeur de lieu sur telephone, avec corrections du formulaire long mobile.'
-        },
-        {
-            date: '2026-05-09',
-            title: 'Version 0.17.18 - Admin mobile consolide',
-            summary: 'Les panneaux admin accueil, chronologie et carte sont mieux adaptes au telephone avec plein ecran, scroll vertical et controles tactiles.'
-        },
-        {
-            date: '2026-05-09',
-            title: 'Version 0.17.17 - CI chronologie Firefox stabilisee',
-            summary: 'La navigation rapide par periode de la chronologie cible le bon groupe de maniere deterministe dans les tests Firefox.'
-        },
-        {
-            date: '2026-05-09',
-            title: 'Version 0.17.16 - Chronologie mobile consolidee',
-            summary: 'La chronologie mobile gagne un header compact, une navigation tactile, des filtres pleine largeur et une lightbox mieux bornee.'
-        },
-        {
-            date: '2026-05-09',
-            title: 'Version 0.17.15 - Accueil mobile consolide',
-            summary: 'L accueil mobile gagne une navigation tactile, des CTA homogenes et des blocs de soutien lisibles sans debordement horizontal.'
-        },
-        {
-            date: '2026-05-09',
-            title: 'Version 0.17.14 - Premiere tranche mobile carte',
-            summary: 'La carte gagne une barre d outils mobile compacte, un flux temps reel mieux place et un panneau lieu prioritaire sur telephone.'
-        },
-        {
-            date: '2026-05-09',
-            title: 'Version 0.17.13 - Suppression annotations persistante',
-            summary: 'La suppression des annotations cible correctement l id serveur, persiste le JSON et synchronise la carte en temps reel.'
-        },
-        {
-            date: '2026-05-08',
-            title: 'Version 0.17.12 - Detail chronologie elargi',
-            summary: 'Le detail des evenements de chronologie utilise mieux la largeur du panneau apres l ajout de l agrandissement d image.'
-        },
-        {
-            date: '2026-05-07',
-            title: 'Version 0.17.11 - Images chronologie agrandies',
-            summary: 'Les images de detail de la frise peuvent etre ouvertes en grand dans une modale plein ecran accessible.'
-        },
-        {
-            date: '2026-05-07',
-            title: 'Version 0.17.10 - Fix theme clair carte',
-            summary: 'Le bouton theme clair de la barre d outil reapplique correctement le theme, son etat accessible et la preference locale.'
-        },
-        {
-            date: '2026-05-06',
-            title: 'Version 0.17.9 - Reordre des blocs narratifs',
-            summary: 'L editeur de lieux permet de reordonner lore, historique, quetes et sections longues par glisser-deposer ou boutons accessibles.'
-        },
-        {
-            date: '2026-05-06',
-            title: 'Version 0.17.8 - Peinture ephemere carte',
-            summary: 'Un outil local permet de tracer puis effacer des schemas temporaires sur la carte sans creer d annotation persistante.'
-        },
-        {
-            date: '2026-05-06',
-            title: 'Version 0.17.7 - Navigation libre carte',
-            summary: 'La carte n est plus verrouillee aux bords afin de rendre les lieux proches des limites plus faciles a atteindre et selectionner.'
-        },
-        {
-            date: '2026-05-06',
-            title: 'Version 0.17.6 - Polish chronologie',
-            summary: 'La frise gagne en densite, en lisibilite sur les longues periodes et en transitions de lecture.'
-        },
-        {
-            date: '2026-05-06',
-            title: 'Version 0.17.5 - Ordre chronologique public',
-            summary: 'La chronologie publique et les tests UI utilisent desormais le meme ordre d evenements trie par annee.'
-        },
-        {
-            date: '2026-05-06',
-            title: 'Version 0.17.4 - Upload images chronologie',
-            summary: 'L admin chronologie permet d uploader directement une image d evenement et de remplir automatiquement l URL media.'
-        },
-        {
-            date: '2026-05-06',
-            title: 'Version 0.17.3 - Documentation projet',
-            summary: 'Documentation restructuree, version projet alignee et preparation d un suivi version/changelog a chaque commit.'
-        },
-        {
-            date: '2026-02-28',
-            title: 'Nouvel accueil en ligne',
-            summary: 'Nouvelle page d accueil avec session, communaute, flux live, lieux mis en avant et patch notes.'
-        }
-    ]
+    changelog: CHANGELOG
 };
 
 const state = {
@@ -523,9 +285,9 @@ const applySiteConfig = config => {
     setLinkHref(dom.footerContact, contactHref, `mailto:${DEFAULT_SITE_CONFIG.support.contactEmail}`);
     setLinkHref(dom.donateLink, PAYPAL_DONATION_URL, PAYPAL_DONATION_URL);
     setLinkHref(dom.footerCredits, merged.legal.creditsUrl, DEFAULT_SITE_CONFIG.legal.creditsUrl);
-    setTextContent(dom.footerVersion, merged.version || DEFAULT_SITE_CONFIG.version);
+    setTextContent(dom.footerVersion, APP_VERSION);
     setTextContent(dom.footerNote, merged.legal.footerNote || DEFAULT_SITE_CONFIG.legal.footerNote);
-    renderHomeChangelog(merged.changelog || DEFAULT_SITE_CONFIG.changelog, 'config');
+    renderHomeChangelog(mergeChangelog(merged.changelog), 'code+config');
 };
 
 const loadSiteConfig = async () => {
@@ -636,23 +398,10 @@ const setTextContent = (element, value) => {
     element.textContent = normalizeText(value) || '';
 };
 
-const normalizeChangelogEntries = entries => {
-    if (!Array.isArray(entries)) {
-        return [];
-    }
-    return entries
-        .map(entry => ({
-            date: normalizeText(entry?.date),
-            title: normalizeText(entry?.title) || 'Mise a jour',
-            summary: normalizeText(entry?.summary) || normalizeText(entry?.title) || 'Changement livre.'
-        }))
-        .filter(entry => entry.title);
-};
-
 const formatChangelogDate = value => {
     const raw = normalizeText(value);
     if (!raw) {
-        return 'Date inconnue';
+        return 'Date à confirmer';
     }
     const parsed = Date.parse(raw);
     if (!Number.isFinite(parsed)) {
@@ -669,7 +418,7 @@ const renderHomeChangelog = (entries, source = 'config') => {
     if (!dom.changelogList) {
         return;
     }
-    const safeEntries = normalizeChangelogEntries(entries).slice(0, 3);
+    const safeEntries = normalizeEntries(entries).slice(0, 3);
     if (!safeEntries.length) {
         dom.changelogList.innerHTML = '<li class="home-news-empty">Aucun patch note disponible pour le moment.</li>';
         setStatusPill(dom.changelogStatus, 'Vide', 'error');
@@ -684,10 +433,8 @@ const renderHomeChangelog = (entries, source = 'config') => {
     </div>
     <p class="home-changelog-text">${escapeHtml(entry.summary)}</p>
 </li>`).join('');
-    setStatusPill(dom.changelogStatus, source === 'git' ? 'Git' : 'A jour', 'ok');
-    setTextContent(dom.changelogNote, source === 'git'
-        ? 'Versions et corrections techniques issues de l’historique de l’application.'
-        : 'Versions, corrections et évolutions techniques de Carte Hesta.');
+    setStatusPill(dom.changelogStatus, source === 'code' ? 'Code' : 'Code + Config', 'ok');
+    setTextContent(dom.changelogNote, 'Versions, corrections et évolutions techniques de Carte Hesta. Notes maintenues dans le code et la configuration.');
 };
 
 const fetchHomeChangelog = async () => {
@@ -695,17 +442,9 @@ const fetchHomeChangelog = async () => {
         return;
     }
     setStatusPill(dom.changelogStatus, 'Chargement...');
-    try {
-        const response = await fetch(CHANGELOG_URL, { cache: 'no-store' });
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        const payload = await response.json();
-        renderHomeChangelog(payload?.entries, payload?.source || 'api');
-    } catch (error) {
-        console.warn('[home] changelog API unavailable, fallback site config used', error);
-        renderHomeChangelog(state.siteConfig?.changelog || DEFAULT_SITE_CONFIG.changelog, 'config');
-    }
+    const result = await loadChangelog({ limit: 3, config: state.siteConfig });
+    renderHomeChangelog(result.entries, result.source);
+    if (result.fallback) setStatusPill(dom.changelogStatus, 'Repli local', 'neutral');
 };
 
 const formatDisplayDate = value => {
