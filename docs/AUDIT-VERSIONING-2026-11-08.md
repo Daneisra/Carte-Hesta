@@ -234,3 +234,70 @@ Diagnostics de cette phase : `test-results/cartehesta-test-994M9j` et `cartehest
 **La branche est apte à recevoir un commit de préparation, après autorisation explicite. Aucun commit n'est créé ici.** Les décisions I-1/I-2/I-3/F-2/F-1/F-3/F-5 sont couvertes par les corrections et tests décrits ; I-4 est préparé dans la documentation sans intervention VPS. Le diff reste limité au versioning, au changelog, à la visibilité média dépendante de ces projections, aux contrôles et à leur documentation.
 
 **Elle n'est pas prête à être fusionnée ni publiée** : la note reste volontairement en draft sans date définitive ; la validation complète Firefox/Linux reste obligatoire sur la révision finale ; les vérifications natives Linux ignorées ici ne sont pas réputées réussies ; l'état du vérificateur VPS doit être contrôlé et sa transition éventuellement autorisée et exécutée pendant la fenêtre de gel. L'incident Firefox local reste documenté malgré la reprise réussie. Aucun secret, store réel, compte, groupe, personnage ou média de production n'a été modifié.
+
+## Diagnostic Firefox après la Draft PR nº 3 — 8 novembre 2026
+
+Cette intervention reste locale, sur `fix/versioning-changelog-01750`, à partir de `40359f96ae166b41d23d8813313a16d82f6a4928`. Aucun nouveau commit, push, changement de PR, tag, déploiement ou accès VPS. `0.17.50` reste en `draft`, avec une date vide.
+
+### Preuves disponibles et limites du diagnostic
+
+Le journal de la [CI Linux nº 10](https://github.com/Daneisra/Carte-Hesta/actions/runs/42489869670) a été relu, notamment les deux échecs initiaux et leurs reprises. Les ZIP de traces sont annoncés dans ce journal mais ne figurent pas parmi les artefacts conservés : aucun artefact n'a été publié après le refus attendu de `release:ready`. Ils n'ont donc pas pu être analysés localement.
+
+- **Chronologie, clic à la ligne 166** : le journal identifie Firefox **PID 7445** et un arrêt fatal de `MOZ_DISABLE_NONLOCAL_CONNECTIONS` après une tentative vers `aus5.mozilla.org (151.101.73.91)`. La fermeture est bien liée au garde réseau natif. Les avertissements GPU, audio, espace de noms et Juggler ne suffisent pas à établir une autre cause.
+- **Isolation, navigation à la ligne 6** : fermeture de la page/contexte signalée, sans PID ni journal natif associé dans les éléments conservés. Sa cause demeure indéterminée ; lui attribuer le même arrêt réseau serait une hypothèse.
+- **Reproduction locale avant correction** : le diagnostic minimal ne réussit aucune création de page (0/2 réussis, erreurs lors de `newPage`), puis un essai UI échoue de même. Les processus Firefox **22200** et **13084** signalent `Failed to launch tab subprocess`, restent connectés côté Playwright puis quittent avec le code 0 lors de leur fermeture explicite. Ce symptôme Windows de création de sous-processus est distinct d'un arrêt réseau fatal ; son mécanisme système exact n'a pas été déterminé.
+- Le même harnais synthétique exécuté hors du bac à sable d'exécution restreint de l'outil peut créer les pages. Un essai de lecture de `about:policies` via Playwright rencontre des erreurs internes Juggler (`SimpleChannel` redéclaré), puis reproduit le refus natif d'AUS après environ 30 secondes : Firefox **PID 9440**, code de sortie Windows **2147483651**. Ce test d'inspection n'est pas ajouté à la CI.
+
+Toutes les exécutions de navigateur restent soumises aux frontières du projet, à son environnement synthétique et à `MOZ_DISABLE_NONLOCAL_CONNECTIONS=1`. Aucun réglage de permission système ni de bac à sable Firefox n'a été modifié pour les faire passer.
+
+### Politique retenue et vérification effective
+
+Mozilla décrit [DisableSystemAddonUpdate](https://firefox-admin-docs.mozilla.org/reference/policies/disablesystemaddonupdate/) séparément de `DisableAppUpdate`. La [documentation des extensions système](https://firefox-source-docs.mozilla.org/toolkit/mozapps/extensions/addon-manager/SystemAddons.html) décrit leur manifeste AUS, dont le chemin contient `/update/3/SystemAddons/`.
+
+Le code livré avec le Firefox installé de Playwright 1.56.0 a été examiné en lecture seule : `Policies.sys.mjs` interdit la fonctionnalité `SysAddonUpdate` ; `AddonManager.sys.mjs` consulte cette interdiction avant de déclencher les mises à jour des extensions système. Aucun fichier du navigateur installé n'a été modifié.
+
+La correction ajoute uniquement `DisableSystemAddonUpdate: true` au JSON éphémère généré par `tests/support/sandbox.cjs`. Les politiques existantes, l'URL de mise à jour applicative locale, l'écriture exclusive, le contrôle de chemin et les frontières réseau sont conservés.
+
+Deux vérifications complètent l'inspection du code :
+
+1. Une capture native de `about:policies`, produite avec un profil jetable et la politique synthétique, affiche dans **Active** les deux valeurs `DisableAppUpdate: true`, `DisableSystemAddonUpdate: true`, ainsi que l'URL applicative locale. Cette lecture utilise la capture native de Firefox, sans dépendre de l'évaluation de la page par Juggler.
+2. Une comparaison de deux laboratoires redirige **uniquement dans ces profils de diagnostic** `extensions.systemAddon.update.url` vers leur serveur local. Chaque observation dure 40 secondes après navigation. Sans la nouvelle politique, le serveur reçoit une requête `/system-addons.xml` ; avec elle, aucune requête vers ce manifeste. Les deux navigateurs restent utilisables et quittent normalement. Les autres réglages sont identiques ; aucune connexion distante n'est autorisée pour ce contrôle.
+
+L'effet sur ce mécanisme est donc démontré. Le journal Linux initial ne fournit toutefois pas le chemin complet de la requête AUS ni la pile de son initiateur : l'identification de ce mécanisme comme initiateur exact de l'incident Linux reste une inférence étayée, pas une preuve de pile d'appel. L'élimination de toutes les instabilités Firefox/Linux n'est pas établie.
+
+### Tests ajoutés et résultats exécutés
+
+Les tests d'isolation vérifient la nouvelle politique dans le fichier autonome et dans celui du serveur synthétique, le maintien du garde natif et le refus explicite d'AUS par le routage. Un nouveau test UI tente AUS puis une autre origine externe, vérifie leur interception et prouve qu'une navigation locale reste possible. Il s'ajoute aux scénarios existants, sans les remplacer.
+
+Le lanceur accepte `--retries=0`, sans accepter de valeur supérieure. `--firefox-diagnostics` active facultativement l'observateur de processus/protocole existant, exclusivement avec `--project=firefox`. Un test vérifie le refus d'une augmentation des reprises et de l'application de cet observateur à Chromium. La configuration Playwright, les reprises CI par défaut et les dépendances restent inchangées.
+
+Environnement local : Windows 10.0.19045, Node 22.23.2, Playwright 1.56.0, Firefox du cache `firefox-1495`. Les suites complètes ci-dessous utilisent toutes **zéro reprise automatique**.
+
+| Vérification | Résultat réellement observé |
+| --- | --- |
+| Diagnostic minimal après correction | **3/3 réussis**, PID Firefox 22104, sortie normale. |
+| Firefox complet, première validation, observateur actif | **75/75 réussis au premier essai**, PID 4024, sortie normale ; avant l'ajout du nouveau test UI. |
+| Firefox complet avec le nouveau test, observateur actif | **75/76 réussis**, **1 échec du planning**, aucune reprise. PID 22684 puis 18936 après remplacement du worker ; sorties normales, aucun arrêt fatal réseau dans les événements collectés. |
+| Firefox complet répété, sans observateur | **76/76 réussis au premier essai**, aucune reprise. |
+| Isolation complète après les derniers ajouts | **58/58 réussis**, aucun ignoré. Une première exécution précédant le dernier ajout avait réussi 57/57. |
+| Unitaires dans le harnais isolé | **30/30 réussis** ; avertissement Node de type de module déjà existant, sans échec. |
+| API dans le harnais isolé | **10/10 réussis**. |
+| Chromium, nouveau test UI de refus réseau | **1/1 réussi au premier essai**, aucune reprise. La suite Chromium complète n'a pas été relancée pour cette intervention ciblée. |
+| Contrôle natif négatif après correction | Refus fatal attendu d'une connexion vers l'adresse de documentation `192.0.2.1`, avec les deux politiques actives et le garde à 1 ; code natif 2147483651. L'assertion de refus réussit. |
+| Comparaison du manifeste local et capture des politiques | Comparaison réussie ; les deux politiques sont visibles actives dans la capture native. |
+| Préparation et vérification du contexte Linux `--e1` | Réussies : 186 fichiers, 347 dépendances locales contrôlées, aucune donnée de production copiée. **Ce n'est pas une exécution Linux.** |
+| `release:check` | Réussi : 0.17.50, 49 notes, draft cohérent et historique conservé. |
+| `release:ready` | **Refus attendu** `E_RELEASE_NOT_READY`. Aucun contournement. |
+| Revue finale | Diff complet et statut examinés ; encodage, `node --check` des cinq fichiers de code modifiés, `git diff --check` et contrôle strict des chemins réussis. Aucun résultat de test, profil, donnée réelle ou secret ajouté au diff. |
+
+L'échec intermédiaire concerne `tests/ui/planning.spec.js:207` : après le clic sur la sauvegarde, le statut reste `Edition de "Session admin test".` au lieu de `Session modifiee.` pendant 10 secondes. La trace contient la création POST mais aucune modification PATCH. Le navigateur continue les scénarios suivants ; aucun message fatal réseau n'est enregistré. La capture montre toujours le formulaire et les deux sessions. Un clic pendant le défilement animé du formulaire est une piste, mais sa cause n'est pas confirmée. Aucun changement du planning, délai, reprise automatique, assertion ou permission n'a été introduit pour masquer ce résultat. Le succès de l'exécution suivante ne l'efface pas.
+
+Les deux suites complètes entièrement réussies ne constituent pas une preuve de stabilité absolue : sur trois exécutions, une comporte cet échec distinct. La cause du premier incident Linux reste inconnue. Linux n'est pas disponible ici : WSL n'est pas installé et aucun moteur Docker n'est accessible ; aucune installation ni nouvelle exécution GitHub Actions n'a été déclenchée. La validation complète Firefox/Linux de la révision corrigée reste nécessaire avant fusion.
+
+Diagnostics ignorés par Git : `test-results/cartehesta-test-9zUMAc` et `cartehesta-test-HExW5z` (création de page Windows), `cartehesta-test-ik02bp` (reproduction AUS), `cartehesta-test-D1wmgn` (minimal corrigé), `cartehesta-test-VRmccv` (75/75), `cartehesta-test-2PVqFl` (75/76 et trace planning), `cartehesta-test-FCkqkQ` (76/76), `cartehesta-test-r5JVfk` (unitaires), `cartehesta-test-c6yfOm` (API), `firefox-isolation-final.tap` et `firefox-system-addon-ab.json`. Les profils natifs jetables `cartehesta-test-52cCaD` (capture), `cartehesta-test-V6Kfg3` (refus natif), `cartehesta-test-U0Mtmj` et `cartehesta-test-RccX1c` (comparaison) se trouvent uniquement sous le répertoire temporaire système. Aucun de ces profils, journaux ou résultats n'est destiné au commit.
+
+### Ajustement après la contre-revue Firefox
+
+R-3 : le nouveau test UI est renommé « le routage Playwright bloque les deux URL externes testées puis permet une navigation locale ». Seul son intitulé change : il vérifie le routage de deux navigations, sans prétendre exercer le mécanisme natif des extensions système ni toutes les origines externes. Sa logique reste identique. Les remarques R-1 et R-2 restent des points de validation avant publication ; cet ajustement ne les déclare pas levées. Les limites et l'échec intermédiaire du planning restent conservés ci-dessus.
+
+Avant le commit Firefox autorisé, les dernières vérifications locales réussissent : 30 tests unitaires, 58 tests d'isolation et les trois scénarios UI d'isolation sous chacun des deux navigateurs, sans reprise. Syntaxe, encodage, chemins indexés et cohérence de version sont vérifiés ; `release:ready` conserve son refus attendu. Les journaux de cette dernière passe restent dans `test-results/firefox-precommit-*.tap`, ignorés par Git. Cette passe ciblée prépare une nouvelle validation Linux complète ; elle ne préjuge pas de son résultat.

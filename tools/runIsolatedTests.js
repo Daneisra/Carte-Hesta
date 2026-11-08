@@ -7,6 +7,8 @@ const { createSandbox, cleanEnvironment, assertPlainPath, removeSandbox, SOURCE_
 const { startIsolatedServer } = require('./devServerWithStub');
 
 async function run(args) {
+    const diagnostics = args.includes('--firefox-diagnostics');
+    args = args.filter(arg => arg !== '--firefox-diagnostics');
     const sandbox = createSandbox();
     const unit = args[0] === '--unit';
     const storage = args[0] === '--storage';
@@ -24,6 +26,7 @@ async function run(args) {
         const registry = require(path.join(path.dirname(require.resolve('playwright-core/package.json')), 'lib/server/registry/index.js'));
         const env = cleanEnvironment(sandbox, {
             CARTE_TEST_PROCESS: 'runner', CARTE_TEST_ORIGIN: app?.origin || '',
+            CARTE_FIREFOX_DIAGNOSTICS: diagnostics ? '1' : '',
             CARTE_TEST_DEBUG: process.env.CARTE_TEST_DEBUG === '1' ? '1' : '',
             DEBUG: process.env.CARTE_TEST_DEBUG === '1' ? 'pw:browser,pw:protocol' : '',
             CARTE_TEST_PROXY: app ? `http://127.0.0.1:${app.stubPort}` : '',
@@ -100,10 +103,11 @@ async function main() {
         return;
     }
     // No overrides that could substitute another server, config or persistent storageState.
-    const allowed = /^(?:--project=(?:api|chromium|firefox)|--headed|--update-snapshots|--list|--grep=.+|--reporter=(?:list|line))$/;
+    const allowed = /^(?:--project=(?:api|chromium|firefox)|--headed|--update-snapshots|--list|--grep=.+|--reporter=(?:list|line)|--retries=0|--firefox-diagnostics)$/;
     if (args.some(arg => !allowed.test(arg))) throw new Error('Unsupported test option: use the documented isolated commands');
     const projects = args.filter(arg => arg.startsWith('--project='));
     if (projects.length > 1) throw new Error('Select a single project per isolated run');
+    if (args.includes('--firefox-diagnostics') && projects[0] !== '--project=firefox') throw new Error('Firefox diagnostics require --project=firefox');
     if (projects.length) process.exitCode = await run(args);
     else {
         for (const project of ['api', 'chromium', 'firefox']) {

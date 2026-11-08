@@ -138,7 +138,9 @@ function installFirefoxUpdatePolicy(browserDirectory, origin) {
     if (!fs.existsSync(distribution)) fs.mkdirSync(distribution);
     const policy = path.join(distribution, 'policies.json');
     assertPlainPath(policy);
-    const expected = { policies: { DisableAppUpdate: true, AppUpdateURL: origin + '/_firefox/updates.xml' } };
+    // Application and system-add-on updates use separate Firefox policy gates.
+    // Only this owned synthetic profile receives these policies; network guards stay enabled.
+    const expected = { policies: { DisableAppUpdate: true, DisableSystemAddonUpdate: true, AppUpdateURL: origin + '/_firefox/updates.xml' } };
     fs.writeFileSync(policy, JSON.stringify(expected) + '\n', { flag: 'wx', mode: 0o600 });
     if (JSON.stringify(JSON.parse(fs.readFileSync(policy, 'utf8'))) !== JSON.stringify(expected)) throw new Error('Firefox update policy verification failed');
     return { updateDisabled: true, existingPolicyOverwritten: false };

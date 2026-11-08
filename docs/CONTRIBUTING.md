@@ -25,6 +25,15 @@ Si votre compte possède une configuration npm privée, définir NPM_CONFIG_USER
 
 Les lanceurs génèrent leurs stores, secrets fictifs, ports, processus et profils de navigateur. Ils refusent de réutiliser un serveur existant et bloquent les connexions distantes. Les deux navigateurs restent obligatoires dans la CI Linux. Un défaut d'outillage Windows doit être documenté, pas masqué par une exclusion.
 
+### Diagnostic Firefox sans reprise
+
+    node tools/runIsolatedTests.js --project=firefox --retries=0
+    node tools/runIsolatedTests.js --project=firefox --retries=0 --firefox-diagnostics
+
+La seconde commande active l'observateur de processus/protocole déjà utilisé par `tools/diagnoseFirefox.js`. Les événements, PID, sorties natives et rapports restent dans `test-results/`, ignoré par Git. Cette instrumentation est facultative ; elle ne change ni les assertions ni le résultat des méthodes Playwright. `--retries=0` peut seulement supprimer les reprises ; aucune valeur supérieure n'est autorisée par le lanceur. Les valeurs par défaut de la CI restent inchangées.
+
+Le fichier de politiques appartient exclusivement au laboratoire temporaire. `DisableAppUpdate` et son URL locale concernent les mises à jour de Firefox ; `DisableSystemAddonUpdate` désactive séparément les mises à jour des extensions système. Ne pas installer cette politique dans un navigateur personnel ou de production. `MOZ_DISABLE_NONLOCAL_CONNECTIONS=1`, le proxy local et les refus de frontière restent obligatoires. Un refus natif fatal n'est pas un défaut à contourner par une autorisation de domaine. Le test UI de refus vérifie l'interception des navigations ; il ne remplace pas le garde natif des services internes du navigateur.
+
 Le gate strict vérifie les chemins indexés : node tools/auditTrackedPaths.js --strict. Il refuse tout store, média historique, secret ou artefact interdit. Les dépendances du contexte Linux sont contrôlées par tools/prepareFirefoxLinuxContext.js --e1.
 
 Le build de production passe par tools/deployment.js package avec trois arguments explicites : source absolue, nouvelle destination absolue, révision complète. Ne jamais copier globalement le dépôt vers app/public. Les nouveaux tests de déploiement exigent Python 3 ; Nginx et rsync sont vérifiés dans la CI Linux.
